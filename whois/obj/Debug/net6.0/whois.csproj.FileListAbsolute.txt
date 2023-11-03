@@ -1,0 +1,70 @@
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\whois.exe
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\whois.deps.json
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\whois.runtimeconfig.json
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\whois.pdb
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\Google.Protobuf.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\K4os.Compression.LZ4.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\K4os.Compression.LZ4.Streams.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\K4os.Hash.xxHash.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\MySql.Data.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\Ubiety.Dns.Core.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\ZstdNet.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\BouncyCastle.Crypto.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\System.Configuration.ConfigurationManager.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\System.Security.Cryptography.ProtectedData.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\System.Security.Permissions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\System.Windows.Extensions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.csproj.AssemblyReference.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.AssemblyInfoInputs.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.AssemblyInfo.cs
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.csproj.CoreCompileInputs.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.csproj.CopyComplete
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\refint\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.pdb
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\whois.genruntimeconfig.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases & Networks\whois\whois\obj\Debug\net6.0\ref\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\whois.exe
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\whois.deps.json
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\whois.runtimeconfig.json
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\whois.pdb
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\Google.Protobuf.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\K4os.Compression.LZ4.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\K4os.Compression.LZ4.Streams.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\K4os.Hash.xxHash.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\MySql.Data.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\Ubiety.Dns.Core.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\ZstdNet.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\BouncyCastle.Crypto.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\System.Configuration.ConfigurationManager.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\System.Security.Cryptography.ProtectedData.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\System.Security.Permissions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\System.Windows.Extensions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\Microsoft.Win32.SystemEvents.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\runtimes\unix\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\bin\Debug\net6.0\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.csproj.AssemblyReference.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.AssemblyInfoInputs.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.AssemblyInfo.cs
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.csproj.CoreCompileInputs.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.csproj.CopyComplete
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\refint\whois.dll
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.pdb
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\whois.genruntimeconfig.cache
+C:\Users\matth\OneDrive\Documents\Comp Sci\Databases-Networks\whois\whois\obj\Debug\net6.0\ref\whois.dll
