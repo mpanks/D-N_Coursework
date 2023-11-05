@@ -3,6 +3,7 @@
     using MySql.Data;
     using MySql.Data.MySqlClient;
     using Org.BouncyCastle.Asn1.Utilities;
+    using System.Reflection.Metadata;
 
     internal class Program
     {
@@ -38,7 +39,7 @@
                 if (pieces.Length == 2) update = pieces[1];
             }
             Console.Write($"Operation on ID '{ID}'");
-            ServerCommands servCmd = new ServerCommands("localhost", "root", "CW", "3306", "P@55w0rd5");
+            ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
             if (operation == null)
             {
                 servCmd.Dump(ID);
@@ -77,8 +78,21 @@
             }
             public void Dump(string ID)
             {
-                string sqlCmd = $"SELECT * FROM userinfo WHERE UserID='{ID}';";
-                MySqlCommand cmd = new MySqlCommand(sqlCmd, conn);
+                //ID is LoginID - needs to dump every person who has that LoginID
+
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.CommandText = "select users.UserID, Forenames, surname, title, position, userLocation, phone, email " +
+                    "FROM users, phonenumber, usersemail, emails, logindetails " +
+                    "WHERE users.userID = phonenumber.userID " +
+                    "AND users.userID = usersemail.userID " +
+                    "AND usersemail.emailID = emails.emailID " +
+                    "AND logindetails.userID = (SELECT userID FROM logindetails " +
+                    "WHERE loginID = @loginID)" +
+                    "AND users.userID = logindetails.userID;";
+                //UserID, Forename, Lastname, title, position, userlocation, phonenumber, email
+
+                cmd.Connection = conn;
+                cmd.Parameters.Add(new MySqlParameter("@loginID", ID));
                 cmd.ExecuteNonQuery();
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
@@ -96,8 +110,16 @@
             }
             public void Lookup(string ID, string field)
             {
-                string sqlCmd = $"SELECT UserID,{field} FROM userinfo WHERE UserID ='{ID}'";
-                MySqlCommand cmd = new MySqlCommand(sqlCmd, conn);
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.CommandText = "SELECT * " +
+                    " FROM users, logindetails, emails, phonenumber, usersemail " +
+                    "WHERE logindetails.loginID = @ID " +
+                    "AND users.userID = logindetails.userID " +
+                    "AND users.userID = usersemail.userID " +
+                    "AND usersemail.emailID = emails.emailID;";
+                cmd.Parameters.AddWithValue("@ID", ID);
+
+                cmd.Connection = conn;
                 cmd.ExecuteNonQuery();
                 string output = "";
                 using (MySqlDataReader reader = cmd.ExecuteReader())
@@ -106,7 +128,10 @@
                     {
                         for (int i = 0; i < reader.FieldCount; i++)
                         {
-                            output += $"{reader.GetName(i)}: {reader.GetString(i)}";
+                            if (reader.GetName(i).Equals(field))
+                            {
+                                output += $"{reader.GetName(i)}: {reader.GetString(i)}\n";
+                            }
                         }
                     }
                 }
