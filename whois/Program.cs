@@ -3,17 +3,22 @@
     using MySql.Data;
     using MySql.Data.MySqlClient;
     using Org.BouncyCastle.Asn1.Utilities;
+    using System.Diagnostics;
+    using System.Net.Sockets;
     using System.Reflection.Metadata;
+    using System.Security.Cryptography;
 
+    //TODO Set SQL Statements to work with the up-to-date 3rd normalised DB
     internal class Program
     {
+        static bool debug = true;
         static void Main(string[] args)
         {
             Console.WriteLine("Starting Server");
 
             if (args.Length == 0)
             {
-
+                RunServer();
             }
             else
             {
@@ -87,7 +92,7 @@
                     "AND users.userID = usersemail.userID " +
                     "AND usersemail.emailID = emails.emailID " +
                     "AND logindetails.userID = (SELECT userID FROM logindetails " +
-                    "WHERE loginID = @loginID)" +
+                    "WHERE logindetails.loginID = @loginID)" +
                     "AND users.userID = logindetails.userID;";
                 //UserID, Forename, Lastname, title, position, userlocation, phonenumber, email
 
@@ -121,7 +126,7 @@
 
                 cmd.Connection = conn;
                 cmd.ExecuteNonQuery();
-                string output = "";
+                string output = string.Empty;
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -135,39 +140,116 @@
                         }
                     }
                 }
-                if (output != null)
+                if (output != "")
                 {
                     Console.WriteLine(output);
                 }
                 else
                 {
-                    //Add unknown to database, create new void for simplicity
+                    //TODO Add unknown to database, create new void for simplicity
+                    
                 }
             }
             private void AddNewUser(string ID, string field)
             {
-
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.CommandText = "INSERT INTO ";
+                cmd.Connection = conn;
             }
             public void Update(string ID, string field, string update)
             {
-                string sqlCmd = $"UPDATE UserInfo SET {field} = '{update}' WHERE UserID='{ID}';";
-                MySqlCommand cmd = new MySqlCommand(sqlCmd, conn);
+                MySqlCommand cmd = new MySqlCommand();
+                cmd.CommandText = "UPDATE Users \n" +
+                    "SET userLocation = @update \n" +
+                    "WHERE UserID = \n" +
+                    "(SELECT UserID FROM logindetails \n" +
+                    "WHERE loginID = @ID);";
+                cmd.Parameters.AddWithValue("@field", field);
+                cmd.Parameters.AddWithValue("@update", update);
+                cmd.Parameters.AddWithValue("@ID", ID);
+
+                cmd.Connection = conn;
+
+                cmd.ExecuteNonQuery();
                 if (cmd.ExecuteNonQuery() < 1)
                 {
                     //Add unknown user with the given field
                     Console.WriteLine($"Added user {ID} with {field} = {update}");
+                    cmd.Connection.Close();
                 }
                 else
                 {
                     Console.WriteLine($"ID: {ID} has been updated with {field} = {update}");
+                    cmd.Connection.Close ();
                 }
             }
         }
 
-        static void OpenConnection()
+       static void RunServer()
         {
-            //nada
+            TcpListener listener;
+            Socket connection;
+            NetworkStream socketStream;
+            try
+            {
+                listener = new TcpListener(43);
+                while (true)
+                {
+                    if (debug) Console.WriteLine("Server Waiting connection...");
+                    listener.Start();
+                    connection = listener.AcceptSocket();
+                    socketStream = new NetworkStream(connection);
+                    doRequest(socketStream);
+                    socketStream.Close();
+                    connection.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            if (debug)
+                Console.WriteLine("Terminating Server");
+        }
+       static void doRequest(NetworkStream socketStream)
+        {
+            StreamWriter sw = new StreamWriter(socketStream);
+            StreamReader sr = new StreamReader(socketStream);
+
+            if (debug) Console.WriteLine("Waiting for input from client...");
+            String line = sr.ReadLine();
+            Console.WriteLine($"Received Network Command: '{line}'");
+
+            if (line == "POST / HTTP/1.1")
+            {
+                // The we have an update
+                if (debug) Console.WriteLine("Received an update request");
+            }
+            else if (line.StartsWith("GET /?name=") && line.EndsWith(" HTTP/1.1"))
+            {
+                // then we have a lookup
+                if (debug) Console.WriteLine("Received a lookup request");
+                String[] slices = line.Split(" ");  // Split into 3 pieces
+                String ID = slices[1].Substring(7);  // start at the 7th letter of the middle slice - skip `/?name=`
+
+                //if (DataBase.ContainsKey(ID))
+                //{
+                //    String result = DataBase[ID].Location;
+                //}
+                //else
+                //{
+                //    // Not found
+                //}
+
+            }
+            else
+            {
+                // We have an error
+                sw.WriteLine("HTTP/1.1 400 Bad Request");
+                sw.WriteLine("Content-Type: text/plain");
+                sw.WriteLine();
+            }
+
         }
     }
-
 }

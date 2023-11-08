@@ -2,7 +2,7 @@
   "profiles": {
     "whois": {
       "commandName": "Project",
-      "commandLineArgs": "cssbct\r\ncssbct?userLocation\r\ncssbct?email\r\n\r\n"
+      "commandLineArgs": "cssbct\r\ncssbct?userLocation=InTheLab\r\ncssbct?userLocation\r\n"
     }
   }
 }
