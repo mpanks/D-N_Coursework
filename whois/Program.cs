@@ -159,9 +159,9 @@
             public void Update(string ID, string field, string update)
             {
                 MySqlCommand cmd = new MySqlCommand();
-                cmd.CommandText = "UPDATE Users \n" +
+                cmd.CommandText = "UPDATE Users,emails,useremails,logindetails,phonenumber,\n" +
                     "SET userLocation = @update \n" +
-                    "WHERE UserID = \n" +
+                    "WHERE Users.UserID = \n" +
                     "(SELECT UserID FROM logindetails \n" +
                     "WHERE loginID = @ID);";
                 cmd.Parameters.AddWithValue("@field", field);
