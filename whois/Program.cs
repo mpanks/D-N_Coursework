@@ -30,32 +30,61 @@
         }
         static void ProcessCommand(string command)
         {
-            Console.WriteLine($"\nCommand: {command}");
-            String[] slice = command.Split(new char[] { '?' }, 2);
-            String ID = slice[0];
-            String operation = null;
-            String update = null;
-            String field = null;
-            if (slice.Length == 2)
+            if (debug) Console.WriteLine($"\nCommand: {command}");
+            try
             {
-                operation = slice[1];
-                String[] pieces = operation.Split(new char[] { '=' }, 2);
-                field = pieces[0];
-                if (pieces.Length == 2) update = pieces[1];
-            }
-            Console.Write($"Operation on ID '{ID}'");
-            ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
-            if (operation == null)
+                String[] slice = command.Split(new char[] { '?' }, 2);
+                String ID = slice[0];
+                String operation = null;
+                String update = null;
+                String field = null;
+                if (slice.Length == 2)
+                {
+                    operation = slice[1];
+                    String[] pieces = operation.Split(new char[] { '=' }, 2);
+                    field = pieces[0];
+                    if (pieces.Length == 2) update = pieces[1];
+                    switch (field) //TODO complete switch-case
+                                   //Add the rest of the fields
+                    {
+                        case "userLocation":
+                            break;
+                        default: 
+                            Console.WriteLine($"Unknown field name: '{field}'"); 
+                            return;
+
+
+                    }
+                }
+                if(debug) Console.Write($"Operation on ID '{ID}'");
+                //TODO implement trying to add user to DB
+                //if db !contain ID{add user}
+                ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
+                if (operation == null)
+                {
+                    servCmd.Dump(ID);
+                }
+                else if (operation == null || update == null) //TODO complete conditional
+                    //&& DB !contain ID
+                {
+                    Console.WriteLine($"User {ID} is unknown");
+                }
+                else if (operation == "")
+                {
+                    servCmd.Delete(ID);
+                    return;
+                }
+                else if (update == null)
+                {
+                    servCmd.Lookup(ID, field);
+                }
+                else
+                {
+                    servCmd.Update(ID, field, update);
+                }
+            }catch (Exception e)
             {
-                servCmd.Dump(ID);
-            }
-            else if (update == null)
-            {
-                servCmd.Lookup(ID, field);
-            }
-            else
-            {
-                servCmd.Update(ID, field, update);
+                Console.WriteLine("Fault in Command Processing: " + e.ToString());
             }
         }
         class ServerCommands
@@ -80,6 +109,12 @@
             private void Output(object output)
             {
                 Console.WriteLine(output);
+            }
+            public void Delete(String ID)
+            {
+                if (debug) Console.WriteLine($"Delete record '{ID}' from DataBase");
+                //DataBase.Remove(ID);
+                //TODO Implement DROP command to delete row - NOT THE DATABASE
             }
             public void Dump(string ID)
             {
@@ -169,22 +204,39 @@
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-
-                cmd.ExecuteNonQuery();
-                if (cmd.ExecuteNonQuery() < 1)
-                {
-                    //Add unknown user with the given field
-                    Console.WriteLine($"Added user {ID} with {field} = {update}");
-                    cmd.Connection.Close();
-                }
-                else
-                {
-                    Console.WriteLine($"ID: {ID} has been updated with {field} = {update}");
-                    cmd.Connection.Close ();
-                }
+                //cmd.ExecuteNonQuery();
+                //if (cmd.ExecuteNonQuery() < 1)
+                //{
+                //    //Add unknown user with the given field
+                //    Console.WriteLine($"Added user {ID} with {field} = {update}");
+                //    cmd.Connection.Close();
+                //}
+                //else
+                //{
+                //    Console.WriteLine($"ID: {ID} has been updated with {field} = {update}");
+                //    cmd.Connection.Close ();
+                //}
             }
         }
+        static void HTTPUpdate(string line, StreamReader sr)
+        {
+            int content_length = 0;
+            while (line != "")
+            {
+                if (line.StartsWith("Content-Length: "))
+                {
+                    content_length = Int32.Parse(line.Substring(16));
+                }
+                line = sr.ReadLine();
+                if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
 
+                String[] slices = line.Split(new char[] { '&' }, 2);
+                String ID = slices[0].Substring(5);
+                String value = slices[1].Substring(9);
+                if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
+                //TODO implement update request to update the DB
+            }
+        }
        static void RunServer()
         {
             TcpListener listener;
@@ -198,6 +250,8 @@
                     if (debug) Console.WriteLine("Server Waiting connection...");
                     listener.Start();
                     connection = listener.AcceptSocket();
+                    connection.SendTimeout = 5000;
+                    connection.ReceiveTimeout = 5000;
                     socketStream = new NetworkStream(connection);
                     doRequest(socketStream);
                     socketStream.Close();
@@ -217,39 +271,68 @@
             StreamReader sr = new StreamReader(socketStream);
 
             if (debug) Console.WriteLine("Waiting for input from client...");
-            String line = sr.ReadLine();
-            Console.WriteLine($"Received Network Command: '{line}'");
-
-            if (line == "POST / HTTP/1.1")
+            try
             {
-                // The we have an update
-                if (debug) Console.WriteLine("Received an update request");
-            }
-            else if (line.StartsWith("GET /?name=") && line.EndsWith(" HTTP/1.1"))
+                String line = sr.ReadLine();
+                Console.WriteLine($"Received Network Command: '{line}'");
+                //TODO implement HTTP add user
+                //if db !contain id{add user}
+
+                if(line == null)
+                {
+                    if (debug) Console.WriteLine("Ignoring null command");
+                    return;
+                }
+                if (line == "POST / HTTP/1.1")
+                {
+                    // The we have an update
+                    if (debug) Console.WriteLine("Received an update request");
+                    HTTPUpdate(line, sr);
+                }
+                else if (line.StartsWith("GET /?name=") && line.EndsWith(" HTTP/1.1"))
+                {
+                    // then we have a lookup
+                    if (debug) Console.WriteLine("Received a lookup request");  
+                    
+                    String[] slices = line.Split(new char[] { '&' }, 2);
+                    if (slices.Length < 2 || slices[0] != "name=" || slices[1] != "location=")
+                    {
+                        // This is an invalid request
+                        sw.WriteLine("HTTP/1.1 400 Bad Request");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();
+                        sw.Flush();
+                        Console.WriteLine($"Unrecognised command: '{line}'");
+                        return;
+                    }
+                    String ID = slices[0].Substring(5);    // The bit after name=
+                    String value = slices[1].Substring(9); // The bit after location=
+
+                    //if (DataBase.ContainsKey(ID))
+                    //{
+                    //    String result = DataBase[ID].Location;
+                    //}
+                    //else
+                    //{
+                    //    // Not found
+                    //}
+                }
+                else
+                {
+                    // We have an error
+                    sw.WriteLine("HTTP/1.1 400 Bad Request");
+                    sw.WriteLine("Content-Type: text/plain");
+                    sw.WriteLine();
+                }
+            }catch(Exception e)
             {
-                // then we have a lookup
-                if (debug) Console.WriteLine("Received a lookup request");
-                String[] slices = line.Split(" ");  // Split into 3 pieces
-                String ID = slices[1].Substring(7);  // start at the 7th letter of the middle slice - skip `/?name=`
-
-                //if (DataBase.ContainsKey(ID))
-                //{
-                //    String result = DataBase[ID].Location;
-                //}
-                //else
-                //{
-                //    // Not found
-                //}
-
+                Console.WriteLine("Fault in Command Processing: "+e.ToString());
             }
-            else
+            finally
             {
-                // We have an error
-                sw.WriteLine("HTTP/1.1 400 Bad Request");
-                sw.WriteLine("Content-Type: text/plain");
-                sw.WriteLine();
+                sw.Close();
+                sr.Close();
             }
-
         }
     }
 }
