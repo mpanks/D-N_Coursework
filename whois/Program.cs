@@ -135,7 +135,17 @@
             {
                 if (debug) Console.WriteLine($"Delete record '{ID}' from DataBase");
                 //DataBase.Remove(ID);
-                //TODO Implement DROP command to delete row - NOT THE DATABASE
+                var cmd = new MySqlCommand();
+                cmd.Connection= conn;
+                cmd.CommandText = "DELETE FROM loginDetails, users " +
+                    //"WHERE users.userID = loginDetails.userID " +
+                    //"AND users.userID = phonenumber.userID " +
+                    //"AND users.userID = usersemail.userID " +
+                    //"AND emails.emailID = usersemail.userID" +
+                    "WHERE logindetails.loginID = @ID;" +
+                    //"(SELECT userID from loginDetails WHERE loginID = @ID);";
+                cmd.Parameters.AddWithValue("@ID", ID);
+                cmd.ExecuteNonQuery();
             }
             public string Dump(string ID)
             {
