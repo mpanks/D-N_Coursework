@@ -64,8 +64,7 @@
                 {
                     servCmd.Dump(ID);
                 }
-                else if (operation == null || update == null) //TODO complete conditional
-                                                              //&& DB !contain ID
+                else if ((operation == null || update == null) && !servCmd.CheckDBID(ID))
                 {
                     Console.WriteLine($"User {ID} is unknown");
                 }
@@ -73,6 +72,11 @@
                 {
                     servCmd.Delete(ID);
                     return;
+                }
+                else if (!servCmd.CheckDBID(ID))
+                {
+                    //Add New User
+                    servCmd.AddNewUser(ID, field);
                 }
                 else if (update == null)
                 {
@@ -106,6 +110,22 @@
                 conn = new MySqlConnection(conStr);
                 conn.Open();
                 this.Output("Connection opened");
+            }
+            public bool CheckDBID(string ID)
+            {
+                var cmd = new MySqlCommand();
+                cmd.Connection = conn;
+
+                cmd.CommandText = "SELECT * from loginDetails WHERE loginID = @ID;";
+                cmd.Parameters.AddWithValue("@ID", ID);
+                if(cmd.ExecuteScalar() != null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             private void Output(object output)
             {
@@ -189,37 +209,57 @@
                     return null;
                 }
             }
-            private void AddNewUser(string ID, string field)
+            public void AddNewUser(string ID, string field)
             {
+                Random rnd = new Random();
+                string userID = string.Empty;
+                do 
+                {
+                    userID = rnd.Next(100000,999999).ToString();
+                    Console.WriteLine(userID);
+                } while (CheckDBID(userID));
                 MySqlCommand cmd = new MySqlCommand();
-                cmd.CommandText = "INSERT INTO ";
+                var ins = new MySqlCommand();
+                ins.Connection = conn;
                 cmd.Connection = conn;
+
+                cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' ');";
+                cmd.Parameters.AddWithValue("@location", field);
+                cmd.Parameters.AddWithValue("@userID", userID);
+                ins.CommandText = "INSERT INTO loginDetails(userID, loginID) VALUES (@userID, @loginID);";
+                ins.Parameters.AddWithValue("@userID", userID);
+                ins.Parameters.AddWithValue("@loginID", ID);
+                cmd.ExecuteNonQuery();
+                ins.ExecuteNonQuery();
+                conn.Close();
+
+                Console.WriteLine("Added new user");
             }
             public void Update(string ID, string field, string update)
             {
                 MySqlCommand cmd = new MySqlCommand();
-                switch (field)
+                switch (field.ToLower())
                 {
-                    case "userLocation":
+                    case "userlocation":
                     case "location":
                         cmd.CommandText = "UPDATE Users SET userLocation = @update WHERE userID = " +
                             "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "forename":
                         cmd.CommandText = "UPDATE Users SET forenames = @update WHERE userID = " +
-    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "lastname":
                         cmd.CommandText = "UPDATE Users SET surname = @update WHERE userID = " +
-    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "title":
                         cmd.CommandText = "UPDATE Users SET title = @update WHERE userID = " +
-    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "position":
                         cmd.CommandText = "UPDATE Users SET position = @update WHERE userID = " +
-    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     default:
                         Console.WriteLine($"Unkown field {field}");
@@ -227,16 +267,16 @@
 
                 }
                 //cmd.CommandText = "UPDATE Users,emails,useremails,logindetails,phonenumber,\n" +
-                   // "SET userLocation = @update \n" +
-                    //"WHERE Users.UserID = \n" +
-                    //"(SELECT UserID FROM logindetails \n" +
-                    //"WHERE loginID = @ID);";
+                // "SET userLocation = @update \n" +
+                //"WHERE Users.UserID = \n" +
+                //"(SELECT UserID FROM logindetails \n" +
+                //"WHERE loginID = @ID);";
                 //cmd.Parameters.AddWithValue("@field", field);
                 cmd.Parameters.AddWithValue("@update", update);
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-                if(cmd.ExecuteScalar != null)
+                if (cmd.ExecuteScalar != null)
                 {
                     cmd.ExecuteNonQuery();
                     Console.WriteLine($"Updated {field} to {update} for {ID}");
@@ -244,7 +284,7 @@
                 }
                 else
                 {
-                    //AddNewUser
+                    //Theoretically shouldn't happen
                 }
                 //if (cmd.ExecuteNonQuery() < 1)
                 //{
@@ -273,7 +313,7 @@
             "database=whois;port=3306;password=P@55w0rd5;");
 
             MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection=conn;
+            cmd.Connection = conn;
             conn.Open();
 
             cmd.CommandText = "UPDATE whois.users SET userLocation = @location WHERE userID = " +
@@ -337,7 +377,7 @@
                     // The we have an update
                     if (debug) Console.WriteLine("Received an update request");
                     int content_length = 0;
-                    while (line != "") 
+                    while (line != "")
                     {
                         if (line.StartsWith("Content-Length: "))
                         {
@@ -346,15 +386,15 @@
                         line = sr.ReadLine();
                         if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
                     }
-                    Console.WriteLine("Line: "+line);
+                    Console.WriteLine("Line: " + line);
                     // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
 
                     String[] slices = line.Split(new char[] { '&' }, 2);
                     if (slices.Length < 2 //||
-                        //slices[0].Substring(7,5) != "name=" || 
-                        //slices[1].Substring(0,13) != "userLocation="
+                                          //slices[0].Substring(7,5) != "name=" || 
+                                          //slices[1].Substring(0,13) != "userLocation="
                         )
                     {
                         // This is an invalid request
@@ -372,7 +412,7 @@
                     sw.WriteLine("HTTP/1.1 200 OK");
                     sw.WriteLine("Content-Type: text/plain");
                     sw.WriteLine();
-                    sw.WriteLine(output); 
+                    sw.WriteLine(output);
                     sw.Flush();
                 }
                 else if (line.StartsWith("GET") && line.EndsWith("HTTP/1.1"))
