@@ -44,21 +44,8 @@
                     String[] pieces = operation.Split(new char[] { '=' }, 2);
                     field = pieces[0];
                     if (pieces.Length == 2) update = pieces[1];
-                    //switch (field) //TODO complete switch-case
-                    //               //Add the rest of the fields
-                    //{
-                    //    case "userLocation":
-                    //        break;
-                    //    default:
-                    //        Console.WriteLine($"Unknown field name: '{field}'");
-                    //        return;
-
-
-                    //}
                 }
                 if (debug) Console.Write($"Operation on ID '{ID}'");
-                //TODO implement trying to add user to DB
-                //if db !contain ID{add user}
                 ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
                 if (operation == null)
                 {
@@ -184,24 +171,28 @@
             public string Lookup(string ID, string field)
             {
                 MySqlCommand cmd = new MySqlCommand();
+                cmd.Connection = conn;
                 cmd.CommandText = "SELECT * " +
                     " FROM users, logindetails, emails, phonenumber, usersemail " +
-                    "WHERE logindetails.loginID = @ID " +
-                    "AND users.userID = logindetails.userID " +
-                    "AND users.userID = usersemail.userID " +
-                    "AND usersemail.emailID = emails.emailID;";
+                    "WHERE users.userID = logindetails.userID " +
+                    "AND logindetails.loginID = @ID " +
+                    "AND users.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID1)";
+                    //"OR (users.userID = usersemail.userID " +
+                    //"AND usersemail.emailID = emails.emailID);";
                 cmd.Parameters.AddWithValue("@ID", ID);
+                cmd.Parameters.AddWithValue("@ID1", ID);
 
-                cmd.Connection = conn;
                 cmd.ExecuteNonQuery();
                 string output = string.Empty;
+                if (field.ToLower() == "location" || field.ToLower() == "userlocation") field = "userLocation";
+
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         for (int i = 0; i < reader.FieldCount; i++)
                         {
-                            if (reader.GetName(i).Equals(field))
+                            if (reader.GetName(i).Equals(field) && output != null)
                             {
                                 output += $"{reader.GetName(i)}: {reader.GetString(i)}\n";
                             }
@@ -215,7 +206,7 @@
                 }
                 else
                 {
-                    //TODO Add unknown to database, create new void for simplicity
+                    Console.WriteLine($"Error: Cannot find {ID}");
                     return null;
                 }
             }
@@ -271,22 +262,26 @@
                         cmd.CommandText = "UPDATE Users SET position = @update WHERE userID = " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
+                    case "phone":
+                        cmd.CommandText = "UPDATE phonenumber, users SET phone = @update WHERE users.userID = " +
+                            "(SELECT userID FROM loginDetails WHERE loginID = @ID) " +
+                            "AND phonenumber.userID = users.userID;";
+                        break;
+                    case "email":
+                        cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID = " +
+                            "(SELECT emailID FROM usersEmail WHERE userID = " +
+                            "(SELECT userID FROM loginDetails WHERE loginID = @ID);";
+                        break;
                     default:
                         Console.WriteLine($"Unkown field {field}");
-                        break;
+                        return;
 
                 }
-                //cmd.CommandText = "UPDATE Users,emails,useremails,logindetails,phonenumber,\n" +
-                // "SET userLocation = @update \n" +
-                //"WHERE Users.UserID = \n" +
-                //"(SELECT UserID FROM logindetails \n" +
-                //"WHERE loginID = @ID);";
-                //cmd.Parameters.AddWithValue("@field", field);
                 cmd.Parameters.AddWithValue("@update", update);
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-                if (cmd.ExecuteScalar != null)
+                if (cmd.ExecuteScalar() != null)
                 {
                     cmd.ExecuteNonQuery();
                     Console.WriteLine($"Updated {field} to {update} for {ID}");
@@ -294,19 +289,40 @@
                 }
                 else
                 {
-                    //Theoretically shouldn't happen
+                    var ins = new MySqlCommand();
+                    ins.Connection = conn;
+                    //Should only happen when the user doesn't have a listed phone/email
+                    if (field.ToLower() == "phone")
+                    {
+                        ins.CommandText = "INSERT INTO phonenumber(phone, userID) VALUES(@update, (SELECT userID FROM logindetails WHERE loginID = @ID));";
+                        ins.Parameters.AddWithValue("@update", update);
+                        ins.Parameters.AddWithValue("@ID", ID);
+                        ins.ExecuteNonQuery();
+                        conn.Close();
+                    }
+                    else if (field.ToLower() == "email")
+                    {
+                        Random rnd = new Random();
+                        int emailID = rnd.Next(1, 9999);
+                        ins.CommandText = "INSERT userID, emailID INTO usersemail VALUES(@ID,@emailID);";
+                        ins.Parameters.AddWithValue("@ID", ID);
+                        ins.Parameters.AddWithValue("@emailID", emailID);
+                        if(ins.ExecuteNonQuery() != 0)
+                        {
+                            ins.Dispose();
+                            conn.Close();
+
+                            conn.Open();
+                            ins = new MySqlCommand();
+                            ins.Connection = conn;
+                            ins.CommandText = "INSERT emailID, email INTO email VALUES(@emailID, @email);";
+                            ins.Parameters.AddWithValue("@emailID", emailID );
+                            ins.Parameters.AddWithValue("@email", update);
+                            ins.ExecuteNonQuery();
+                        }
+                    }
+                    Console.WriteLine("Unable to update database");
                 }
-                //if (cmd.ExecuteNonQuery() < 1)
-                //{
-                //    //Add unknown user with the given field
-                //    Console.WriteLine($"Added user {ID} with {field} = {update}");
-                //    cmd.Connection.Close();
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"ID: {ID} has been updated with {field} = {update}");
-                //    cmd.Connection.Close ();
-                //}
             }
         }
         static string HTTPUpdate(string line, StreamReader sr)
@@ -317,7 +333,6 @@
             String ID = slices[0].Substring(5);
             String value = slices[1].Substring(13);
             if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
-            //TODO implement update request to update the DB
             string conStr = string.Empty;
             MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
             "database=whois;port=3306;password=P@55w0rd5;");
@@ -364,7 +379,6 @@
         }
         static void doRequest(NetworkStream socketStream)
         {
-            //TODO implement HTML replies to website
             ServerCommands sc = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
@@ -374,8 +388,6 @@
             {
                 String line = sr.ReadLine();
                 Console.WriteLine($"Received Network Command: '{line}'");
-                //TODO implement HTTP add user
-                //if db !contain id{add user}
 
                 if (line == null)
                 {
@@ -449,14 +461,6 @@
 
                     Console.WriteLine(ID);
                     Console.WriteLine(line);
-                    //if (DataBase.ContainsKey(ID))
-                    //{
-                    //    String result = DataBase[ID].Location;
-                    //}
-                    //else
-                    //{
-                    //    // Not found
-                    //}
                 }
                 else
                 {
