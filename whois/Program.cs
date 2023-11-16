@@ -44,17 +44,17 @@
                     String[] pieces = operation.Split(new char[] { '=' }, 2);
                     field = pieces[0];
                     if (pieces.Length == 2) update = pieces[1];
-                    switch (field) //TODO complete switch-case
-                                   //Add the rest of the fields
-                    {
-                        case "userLocation":
-                            break;
-                        default:
-                            Console.WriteLine($"Unknown field name: '{field}'");
-                            return;
+                    //switch (field) //TODO complete switch-case
+                    //               //Add the rest of the fields
+                    //{
+                    //    case "userLocation":
+                    //        break;
+                    //    default:
+                    //        Console.WriteLine($"Unknown field name: '{field}'");
+                    //        return;
 
 
-                    }
+                    //}
                 }
                 if (debug) Console.Write($"Operation on ID '{ID}'");
                 //TODO implement trying to add user to DB
@@ -198,17 +198,54 @@
             public void Update(string ID, string field, string update)
             {
                 MySqlCommand cmd = new MySqlCommand();
-                cmd.CommandText = "UPDATE Users,emails,useremails,logindetails,phonenumber,\n" +
-                    "SET userLocation = @update \n" +
-                    "WHERE Users.UserID = \n" +
-                    "(SELECT UserID FROM logindetails \n" +
-                    "WHERE loginID = @ID);";
-                cmd.Parameters.AddWithValue("@field", field);
+                switch (field)
+                {
+                    case "userLocation":
+                    case "location":
+                        cmd.CommandText = "UPDATE Users SET userLocation = @update WHERE userID = " +
+                            "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        break;
+                    case "forename":
+                        cmd.CommandText = "UPDATE Users SET forenames = @update WHERE userID = " +
+    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        break;
+                    case "lastname":
+                        cmd.CommandText = "UPDATE Users SET surname = @update WHERE userID = " +
+    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        break;
+                    case "title":
+                        cmd.CommandText = "UPDATE Users SET title = @update WHERE userID = " +
+    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        break;
+                    case "position":
+                        cmd.CommandText = "UPDATE Users SET position = @update WHERE userID = " +
+    "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                        break;
+                    default:
+                        Console.WriteLine($"Unkown field {field}");
+                        break;
+
+                }
+                //cmd.CommandText = "UPDATE Users,emails,useremails,logindetails,phonenumber,\n" +
+                   // "SET userLocation = @update \n" +
+                    //"WHERE Users.UserID = \n" +
+                    //"(SELECT UserID FROM logindetails \n" +
+                    //"WHERE loginID = @ID);";
+                //cmd.Parameters.AddWithValue("@field", field);
                 cmd.Parameters.AddWithValue("@update", update);
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-                //cmd.ExecuteNonQuery();
+                if(cmd.ExecuteScalar != null)
+                {
+                    cmd.ExecuteNonQuery();
+                    Console.WriteLine($"Updated {field} to {update} for {ID}");
+                    conn.Close();
+                }
+                else
+                {
+                    //AddNewUser
+                }
                 //if (cmd.ExecuteNonQuery() < 1)
                 //{
                 //    //Add unknown user with the given field
