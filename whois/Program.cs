@@ -11,7 +11,7 @@
     //TODO Set SQL Statements to work with the up-to-date 3rd normalised DB
     internal class Program
     {
-        static bool debug = true;
+        static bool debug = true; //TODO change debug to false before final commit
         static void Main(string[] args)
         {
             Console.WriteLine("Starting Server");
@@ -49,14 +49,14 @@
                     {
                         case "userLocation":
                             break;
-                        default: 
-                            Console.WriteLine($"Unknown field name: '{field}'"); 
+                        default:
+                            Console.WriteLine($"Unknown field name: '{field}'");
                             return;
 
 
                     }
                 }
-                if(debug) Console.Write($"Operation on ID '{ID}'");
+                if (debug) Console.Write($"Operation on ID '{ID}'");
                 //TODO implement trying to add user to DB
                 //if db !contain ID{add user}
                 ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
@@ -65,7 +65,7 @@
                     servCmd.Dump(ID);
                 }
                 else if (operation == null || update == null) //TODO complete conditional
-                    //&& DB !contain ID
+                                                              //&& DB !contain ID
                 {
                     Console.WriteLine($"User {ID} is unknown");
                 }
@@ -82,7 +82,8 @@
                 {
                     servCmd.Update(ID, field, update);
                 }
-            }catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Console.WriteLine("Fault in Command Processing: " + e.ToString());
             }
@@ -116,7 +117,7 @@
                 //DataBase.Remove(ID);
                 //TODO Implement DROP command to delete row - NOT THE DATABASE
             }
-            public void Dump(string ID)
+            public string Dump(string ID)
             {
                 //ID is LoginID - needs to dump every person who has that LoginID
 
@@ -134,9 +135,10 @@
                 cmd.Connection = conn;
                 cmd.Parameters.Add(new MySqlParameter("@loginID", ID));
                 cmd.ExecuteNonQuery();
+                string output = "";
+
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
-                    string output = "";
                     while (reader.Read())
                     {
                         for (int i = 0; i < reader.FieldCount; i++)
@@ -147,8 +149,9 @@
                     Console.WriteLine(output);
                 }
                 conn.Close();
+                return output;
             }
-            public void Lookup(string ID, string field)
+            public string Lookup(string ID, string field)
             {
                 MySqlCommand cmd = new MySqlCommand();
                 cmd.CommandText = "SELECT * " +
@@ -178,11 +181,12 @@
                 if (output != "")
                 {
                     Console.WriteLine(output);
+                    return output;
                 }
                 else
                 {
                     //TODO Add unknown to database, create new void for simplicity
-                    
+                    return null;
                 }
             }
             private void AddNewUser(string ID, string field)
@@ -218,26 +222,32 @@
                 //}
             }
         }
-        static void HTTPUpdate(string line, StreamReader sr)
+        static string HTTPUpdate(string line, StreamReader sr)
         {
-            int content_length = 0;
-            while (line != "")
-            {
-                if (line.StartsWith("Content-Length: "))
-                {
-                    content_length = Int32.Parse(line.Substring(16));
-                }
-                line = sr.ReadLine();
-                if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
 
-                String[] slices = line.Split(new char[] { '&' }, 2);
-                String ID = slices[0].Substring(5);
-                String value = slices[1].Substring(9);
-                if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
-                //TODO implement update request to update the DB
-            }
+            Console.WriteLine(line);
+            String[] slices = line.Split(new char[] { '&' }, 2);
+            String ID = slices[0].Substring(5);
+            String value = slices[1].Substring(13);
+            if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
+            //TODO implement update request to update the DB
+            string conStr = string.Empty;
+            MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
+            "database=whois;port=3306;password=P@55w0rd5;");
+
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection=conn;
+            conn.Open();
+
+            cmd.CommandText = "UPDATE whois.users SET userLocation = @location WHERE userID = " +
+                "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+            cmd.Parameters.AddWithValue("@location", value);
+            cmd.Parameters.AddWithValue("@ID", ID);
+            cmd.ExecuteNonQuery();
+            conn.Close();
+            return $"Updated Users location with ID: {ID} to: {value}";
         }
-       static void RunServer()
+        static void RunServer()
         {
             TcpListener listener;
             Socket connection;
@@ -250,8 +260,8 @@
                     if (debug) Console.WriteLine("Server Waiting connection...");
                     listener.Start();
                     connection = listener.AcceptSocket();
-                    connection.SendTimeout = 5000;
-                    connection.ReceiveTimeout = 5000;
+                    connection.SendTimeout = 1000;
+                    connection.ReceiveTimeout = 1000;
                     socketStream = new NetworkStream(connection);
                     doRequest(socketStream);
                     socketStream.Close();
@@ -265,8 +275,10 @@
             if (debug)
                 Console.WriteLine("Terminating Server");
         }
-       static void doRequest(NetworkStream socketStream)
+        static void doRequest(NetworkStream socketStream)
         {
+            //TODO implement HTML replies to website
+            ServerCommands sc = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
 
@@ -278,24 +290,35 @@
                 //TODO implement HTTP add user
                 //if db !contain id{add user}
 
-                if(line == null)
+                if (line == null)
                 {
                     if (debug) Console.WriteLine("Ignoring null command");
                     return;
                 }
-                if (line == "POST / HTTP/1.1")
+                if (line.StartsWith("POST ") && line.EndsWith("HTTP/1.1"))
                 {
                     // The we have an update
                     if (debug) Console.WriteLine("Received an update request");
-                    HTTPUpdate(line, sr);
-                }
-                else if (line.StartsWith("GET /?name=") && line.EndsWith(" HTTP/1.1"))
-                {
-                    // then we have a lookup
-                    if (debug) Console.WriteLine("Received a lookup request");  
-                    
+                    int content_length = 0;
+                    while (line != "") 
+                    {
+                        if (line.StartsWith("Content-Length: "))
+                        {
+                            content_length = Int32.Parse(line.Substring(16));
+                        }
+                        line = sr.ReadLine();
+                        if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
+                    }
+                    Console.WriteLine("Line: "+line);
+                    // line = socketStream.Read(content_length);
+                    line = "";
+                    for (int i = 0; i < content_length; i++) line += (char)sr.Read();
+
                     String[] slices = line.Split(new char[] { '&' }, 2);
-                    if (slices.Length < 2 || slices[0] != "name=" || slices[1] != "location=")
+                    if (slices.Length < 2 //||
+                        //slices[0].Substring(7,5) != "name=" || 
+                        //slices[1].Substring(0,13) != "userLocation="
+                        )
                     {
                         // This is an invalid request
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
@@ -305,9 +328,40 @@
                         Console.WriteLine($"Unrecognised command: '{line}'");
                         return;
                     }
-                    String ID = slices[0].Substring(5);    // The bit after name=
-                    String value = slices[1].Substring(9); // The bit after location=
+                    //String ID = slices[0].Substring(5);    // The bit after name=
+                    //String value = slices[1].Substring(9); // The bit after location=
+                    string output = HTTPUpdate(line, sr);
+                    //Console.Write(output);
+                    sw.WriteLine("HTTP/1.1 200 OK");
+                    sw.WriteLine("Content-Type: text/plain");
+                    sw.WriteLine();
+                    sw.WriteLine(output); 
+                    sw.Flush();
+                }
+                else if (line.StartsWith("GET") && line.EndsWith("HTTP/1.1"))
+                {
+                    // then we have a lookup
+                    if (debug) Console.WriteLine("Received a lookup request");
 
+                    String[] slices = line.Split(" ");  // Split into 3 pieces
+                    String ID = slices[1].Substring(7);  // start at the 7th letter of the middle slice - skip `/?name=`
+
+                    sw.WriteLine("HTTP/1.1 200 OK");
+                    sw.WriteLine("Content-Type: text/plain");
+                    sw.WriteLine();//Blank line IS IMPORTANT
+                    string output = sc.Lookup(ID, "userLocation");
+                    if (output != "")
+                    {
+                        sw.WriteLine($"{output}");
+                    }
+                    else
+                    {
+                        sw.WriteLine("User Not Found");
+                    }
+                    sw.Flush();
+
+                    Console.WriteLine(ID);
+                    Console.WriteLine(line);
                     //if (DataBase.ContainsKey(ID))
                     //{
                     //    String result = DataBase[ID].Location;
@@ -324,9 +378,10 @@
                     sw.WriteLine("Content-Type: text/plain");
                     sw.WriteLine();
                 }
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
-                Console.WriteLine("Fault in Command Processing: "+e.ToString());
+                Console.WriteLine("Fault in Command Processing: " + e.ToString());
             }
             finally
             {
