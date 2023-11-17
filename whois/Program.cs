@@ -46,7 +46,7 @@
                     if (pieces.Length == 2) update = pieces[1];
                 }
                 if (debug) Console.WriteLine($"Operation on ID '{ID}'");
-                ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
+                ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
                 if (operation == null)
                 {
                     servCmd.Dump(ID);
@@ -83,7 +83,7 @@
         {
             //TODO set password to L3tM31n before submission
             string conStr = "Server=localhost; user=root;" +
-            "database=whois;port=3306;password=P@55w0rd5";
+            "database=whois;port=3306;password=L3tM31n";
 
             MySqlConnection conn;
             public ServerCommands(
@@ -127,26 +127,22 @@
             public void Delete(String ID)
             {
                 //Removes information stored under a given loginID
-                //TODO get delete command to remove from all tables
                 if (debug) Console.WriteLine($"Delete record '{ID}' from DataBase");
-                //DataBase.Remove(ID);
                 var cmd = new MySqlCommand();
                 cmd.Connection= conn;
                 cmd.CommandText = "DELETE phonenumber FROM phonenumber " +
-                    //"WHERE users.userID = loginDetails.userID " +
-                    //"AND users.userID = phonenumber.userID " +
-                    //"AND users.userID = usersemail.userID " +
-                    //"AND emails.emailID = usersemail.userID" +
                     "WHERE userID = (SELECT userID FROM logindetails WHERE loginID = @ID); " +
 
                     "DELETE emails, usersemail FROM usersemail INNER JOIN emails ON emails.emailID = usersemail.emailID " +
-                    "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID=@ID);" +
+                    "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID);" +
 
                     "DELETE users, logindetails FROM logindetails INNER JOIN users ON logindetails.userID = users.userID " +
                     "WHERE loginID = @ID;" +
-                    //"(SELECT userID from loginDetails WHERE loginID = @ID);";
                 cmd.Parameters.AddWithValue("@ID", ID);
-                cmd.ExecuteNonQuery();
+                if(cmd.ExecuteNonQuery() != 0)
+                {
+                    Console.WriteLine($"User with ID {ID} has been deleted");
+                }
             }
             public string Dump(string ID)
             {
@@ -252,7 +248,7 @@
                 cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' '); " +
                     "INSERT INTO emails(email) VALUES(' '); " +
                     "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
-                    "INSERT INTO phonenumber(userID, phone) VALUES(@userID2, ' ');";
+                    "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
                 cmd.Parameters.AddWithValue("@location", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
                 //cmd.Parameters.AddWithValue("@userID1", userID);
@@ -377,7 +373,7 @@
             if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
             string conStr = string.Empty;
             MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
-            "database=whois;port=3306;password=P@55w0rd5;");
+            "database=whois;port=3306;password=L3tM31n;");
 
             MySqlCommand cmd = new MySqlCommand();
             cmd.Connection = conn;
@@ -423,7 +419,7 @@
         static void doRequest(NetworkStream socketStream)
         {
             //Does request received from webpage
-            ServerCommands sc = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
+            ServerCommands sc = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
 

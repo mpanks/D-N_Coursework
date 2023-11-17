@@ -2,7 +2,7 @@
   "profiles": {
     "whois": {
       "commandName": "Project",
-      "commandLineArgs": "unknown1?\r\n\r\n"
+      "commandLineArgs": "cssbct?location\r\ncssbct?email\r\ncssbct?phone\r\n123456?location\r\n123456?email\r\n123456?phone\r\n"
     }
   }
 }
