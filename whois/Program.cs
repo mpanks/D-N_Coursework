@@ -63,7 +63,7 @@
                 else if (!servCmd.CheckDBID(ID))
                 {
                     //Add New User
-                    servCmd.AddNewUser(ID, field);
+                    servCmd.AddNewUser(ID, field, update);
                 }
                 else if (update == null)
                 {
@@ -81,6 +81,7 @@
         }
         class ServerCommands
         {
+            //TODO set password to L3tM31n before submission
             string conStr = "Server=localhost; user=root;" +
             "database=whois;port=3306;password=P@55w0rd5";
 
@@ -100,6 +101,7 @@
             }
             public bool CheckDBID(string ID)
             {
+                //Checks ID is present in DB
                 var cmd = new MySqlCommand();
                 cmd.Connection = conn;
 
@@ -107,19 +109,25 @@
                 cmd.Parameters.AddWithValue("@ID", ID);
                 if(cmd.ExecuteScalar() != null)
                 {
+                    //ID is present
                     return true;
                 }
                 else
                 {
+                    //ID is not present
                     return false;
                 }
             }
             private void Output(object output)
             {
+                //Easier to call this than write the writeLine everytime
+                //Would have been more useful if I used it
                 Console.WriteLine(output);
             }
             public void Delete(String ID)
             {
+                //Removes information stored under a given loginID
+                //TODO get delete command to remove from all tables
                 if (debug) Console.WriteLine($"Delete record '{ID}' from DataBase");
                 //DataBase.Remove(ID);
                 var cmd = new MySqlCommand();
@@ -136,6 +144,7 @@
             }
             public string Dump(string ID)
             {
+                //Outputs all information stored under a given loginID
                 //ID is LoginID - needs to dump every person who has that LoginID
 
                 MySqlCommand cmd = new MySqlCommand();
@@ -170,15 +179,18 @@
             }
             public string Lookup(string ID, string field)
             {
+                //Lookup request from console
                 MySqlCommand cmd = new MySqlCommand();
                 cmd.Connection = conn;
                 cmd.CommandText = "SELECT * " +
                     " FROM users, logindetails, emails, phonenumber, usersemail " +
                     "WHERE users.userID = logindetails.userID " +
                     "AND logindetails.loginID = @ID " +
-                    "AND users.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID1)";
-                    //"OR (users.userID = usersemail.userID " +
-                    //"AND usersemail.emailID = emails.emailID);";
+                    "AND users.userID = " +
+                    "(SELECT userID FROM loginDetails WHERE loginID = @ID1) " +
+                    "AND users.userID = usersemail.userID " +
+                    "AND usersemail.emailID = emails.emailID " +
+                    "AND phonenumber.userID = users.userID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
                 cmd.Parameters.AddWithValue("@ID1", ID);
 
@@ -206,12 +218,15 @@
                 }
                 else
                 {
+                    //Shouldn't happen
                     Console.WriteLine($"Error: Cannot find {ID}");
                     return null;
                 }
             }
-            public void AddNewUser(string ID, string field)
+            public void AddNewUser(string ID, string field, string value)
             {
+                //Adds new user to DB
+                //generates new userID
                 Random rnd = new Random();
                 string userID = string.Empty;
                 do 
@@ -224,9 +239,15 @@
                 ins.Connection = conn;
                 cmd.Connection = conn;
 
-                cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' ');";
-                cmd.Parameters.AddWithValue("@location", field);
+                cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' '); " +
+                    "INSERT INTO emails(email) VALUES(' '); " +
+                    "INSERT INTO usersemail(userID, emailID) VALUES( @userID1, (SELECT LAST_INSERT_ID()) ); " +
+                    "INSERT INTO phonenumber(userID, phone) VALUES(@userID2, ' ');";
+                cmd.Parameters.AddWithValue("@location", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
+                cmd.Parameters.AddWithValue("@userID1", userID);
+                cmd.Parameters.AddWithValue("@userID2", userID);
+
                 ins.CommandText = "INSERT INTO loginDetails(userID, loginID) VALUES (@userID, @loginID);";
                 ins.Parameters.AddWithValue("@userID", userID);
                 ins.Parameters.AddWithValue("@loginID", ID);
@@ -238,6 +259,7 @@
             }
             public void Update(string ID, string field, string update)
             {
+                //Updates given field with given loginID and update info
                 MySqlCommand cmd = new MySqlCommand();
                 switch (field.ToLower())
                 {
@@ -270,7 +292,7 @@
                     case "email":
                         cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID = " +
                             "(SELECT emailID FROM usersEmail WHERE userID = " +
-                            "(SELECT userID FROM loginDetails WHERE loginID = @ID);";
+                            "(SELECT userID FROM loginDetails WHERE loginID = @ID));";
                         break;
                     default:
                         Console.WriteLine($"Unkown field {field}");
@@ -281,53 +303,62 @@
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-                if (cmd.ExecuteScalar() != null)
+                if (cmd.ExecuteNonQuery() >=1)
                 {
-                    cmd.ExecuteNonQuery();
+                    //cmd.ExecuteNonQuery();
                     Console.WriteLine($"Updated {field} to {update} for {ID}");
                     conn.Close();
                 }
                 else
                 {
-                    var ins = new MySqlCommand();
-                    ins.Connection = conn;
-                    //Should only happen when the user doesn't have a listed phone/email
-                    if (field.ToLower() == "phone")
-                    {
-                        ins.CommandText = "INSERT INTO phonenumber(phone, userID) VALUES(@update, (SELECT userID FROM logindetails WHERE loginID = @ID));";
-                        ins.Parameters.AddWithValue("@update", update);
-                        ins.Parameters.AddWithValue("@ID", ID);
-                        ins.ExecuteNonQuery();
-                        conn.Close();
-                    }
-                    else if (field.ToLower() == "email")
-                    {
-                        Random rnd = new Random();
-                        int emailID = rnd.Next(1, 9999);
-                        ins.CommandText = "INSERT userID, emailID INTO usersemail VALUES(@ID,@emailID);";
-                        ins.Parameters.AddWithValue("@ID", ID);
-                        ins.Parameters.AddWithValue("@emailID", emailID);
-                        if(ins.ExecuteNonQuery() != 0)
-                        {
-                            ins.Dispose();
-                            conn.Close();
+                    ////Should only happen when the user doesn't have a listed phone/email
+                    //Console.WriteLine("Add to table");
+                    //var ins = new MySqlCommand();
+                    //ins.Connection = conn;
+                    //if (field.ToLower() == "phone")
+                    //{
+                    //    //User has no listed phonenumber
+                    //    ins.CommandText = "INSERT INTO phonenumber(phone, userID) VALUES(@update, (SELECT userID FROM logindetails WHERE loginID = @ID));";
+                    //    ins.Parameters.AddWithValue("@update", update);
+                    //    ins.Parameters.AddWithValue("@ID", ID);
+                    //    ins.ExecuteNonQuery();
+                    //    conn.Close();
+                    //}
+                    //else if (field.ToLower() == "email")
+                    //{
+                    //    Console.WriteLine("Add email");
+                    //    //User has no listed email
+                    //    ins.CommandText = "INSERT INTO emails(email) VALUES(@email);" +
+                    //        "INSERT INTO usersemail(userID, emailID) VALUES( (SELECT userID FROM logindetails WHERE loginID = @ID),(SELECT LAST_INSERT_ID()) );";
+                    //    ins.Parameters.AddWithValue("@email", update);
+                    //    ins.Parameters.AddWithValue("@ID", ID);
+                    //    //ins.Parameters.AddWithValue("@emailID", emailID);
+                    //    if (ins.ExecuteNonQuery() != 0)
+                    //    {
+                    //        ins.Dispose();
+                    //        conn.Close();
 
-                            conn.Open();
-                            ins = new MySqlCommand();
-                            ins.Connection = conn;
-                            ins.CommandText = "INSERT emailID, email INTO email VALUES(@emailID, @email);";
-                            ins.Parameters.AddWithValue("@emailID", emailID );
-                            ins.Parameters.AddWithValue("@email", update);
-                            ins.ExecuteNonQuery();
-                        }
-                    }
-                    Console.WriteLine("Unable to update database");
+                    //        conn.Open();
+                    //        ins = new MySqlCommand();
+                    //        ins.Connection = conn;
+                    //        ins.CommandText = "INSERT userID, emailID INTO usersemail VALUES((SELECT userID FROM loginDetails WHERE loginID = @ID),(SELECT emailID FROM emails WHERE );";
+                    //        //ins.CommandText = "INSERT emailID, email INTO email VALUES(@emailID, @email);";
+                    //        //ins.Parameters.AddWithValue("@emailID", emailID);
+                    //        ins.Parameters.AddWithValue("@ID", ID);
+                    //       // ins.ExecuteNonQuery();
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    //Should never happen
+                    //    Console.WriteLine("Unable to update database");
+                    //}
                 }
             }
         }
         static string HTTPUpdate(string line, StreamReader sr)
         {
-
+            //Update request from webpage
             Console.WriteLine(line);
             String[] slices = line.Split(new char[] { '&' }, 2);
             String ID = slices[0].Substring(5);
@@ -351,6 +382,7 @@
         }
         static void RunServer()
         {
+            //Args array is empty - starts server
             TcpListener listener;
             Socket connection;
             NetworkStream socketStream;
@@ -379,6 +411,7 @@
         }
         static void doRequest(NetworkStream socketStream)
         {
+            //Does request received from webpage
             ServerCommands sc = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
             StreamWriter sw = new StreamWriter(socketStream);
             StreamReader sr = new StreamReader(socketStream);
