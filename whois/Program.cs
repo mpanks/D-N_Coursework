@@ -45,7 +45,7 @@
                     field = pieces[0];
                     if (pieces.Length == 2) update = pieces[1];
                 }
-                if (debug) Console.Write($"Operation on ID '{ID}'");
+                if (debug) Console.WriteLine($"Operation on ID '{ID}'");
                 ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "P@55w0rd5");
                 if (operation == null)
                 {
@@ -132,12 +132,18 @@
                 //DataBase.Remove(ID);
                 var cmd = new MySqlCommand();
                 cmd.Connection= conn;
-                cmd.CommandText = "DELETE FROM loginDetails, users " +
+                cmd.CommandText = "DELETE phonenumber FROM phonenumber " +
                     //"WHERE users.userID = loginDetails.userID " +
                     //"AND users.userID = phonenumber.userID " +
                     //"AND users.userID = usersemail.userID " +
                     //"AND emails.emailID = usersemail.userID" +
-                    "WHERE logindetails.loginID = @ID;" +
+                    "WHERE userID = (SELECT userID FROM logindetails WHERE loginID = @ID); " +
+
+                    "DELETE emails, usersemail FROM usersemail INNER JOIN emails ON emails.emailID = usersemail.emailID " +
+                    "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID=@ID);" +
+
+                    "DELETE users, logindetails FROM logindetails INNER JOIN users ON logindetails.userID = users.userID " +
+                    "WHERE loginID = @ID;" +
                     //"(SELECT userID from loginDetails WHERE loginID = @ID);";
                 cmd.Parameters.AddWithValue("@ID", ID);
                 cmd.ExecuteNonQuery();
@@ -173,6 +179,10 @@
                         }
                     }
                     Console.WriteLine(output);
+                }
+                if(output == "")
+                {
+                    Console.WriteLine("Cannot find user");
                 }
                 conn.Close();
                 return output;
@@ -241,12 +251,12 @@
 
                 cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' '); " +
                     "INSERT INTO emails(email) VALUES(' '); " +
-                    "INSERT INTO usersemail(userID, emailID) VALUES( @userID1, (SELECT LAST_INSERT_ID()) ); " +
+                    "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
                     "INSERT INTO phonenumber(userID, phone) VALUES(@userID2, ' ');";
                 cmd.Parameters.AddWithValue("@location", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
-                cmd.Parameters.AddWithValue("@userID1", userID);
-                cmd.Parameters.AddWithValue("@userID2", userID);
+                //cmd.Parameters.AddWithValue("@userID1", userID);
+                //cmd.Parameters.AddWithValue("@userID2", userID);
 
                 ins.CommandText = "INSERT INTO loginDetails(userID, loginID) VALUES (@userID, @loginID);";
                 ins.Parameters.AddWithValue("@userID", userID);
@@ -311,7 +321,8 @@
                 }
                 else
                 {
-                    ////Should only happen when the user doesn't have a listed phone/email
+                    Console.WriteLine("Cannot update user");
+                    ////Should only happen when the user doesn't have a listed phone/email so shouldn't happen 
                     //Console.WriteLine("Add to table");
                     //var ins = new MySqlCommand();
                     //ins.Connection = conn;
@@ -345,7 +356,7 @@
                     //        //ins.CommandText = "INSERT emailID, email INTO email VALUES(@emailID, @email);";
                     //        //ins.Parameters.AddWithValue("@emailID", emailID);
                     //        ins.Parameters.AddWithValue("@ID", ID);
-                    //       // ins.ExecuteNonQuery();
+                    //        // ins.ExecuteNonQuery();
                     //    }
                     //}
                     //else
@@ -484,7 +495,8 @@
                     string output = sc.Lookup(ID, "userLocation");
                     if (output != "")
                     {
-                        sw.WriteLine($"{output}");
+                        sw.WriteLine($"Lookup performed on ID: {ID} <br>");
+                        sw.WriteLine($"Result: {output}");
                     }
                     else
                     {
