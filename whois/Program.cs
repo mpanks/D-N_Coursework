@@ -6,9 +6,6 @@
     using System.Diagnostics;
     using System.Net.Sockets;
     using System.Reflection.Metadata;
-    using System.Security.Cryptography;
-
-    //TODO Set SQL Statements to work with the up-to-date 3rd normalised DB
     internal class Program
     {
         static bool debug = true; //TODO change debug to false before final commit
@@ -81,7 +78,6 @@
         }
         class ServerCommands
         {
-            //TODO set password to L3tM31n before submission
             string conStr = "Server=localhost; user=root;" +
             "database=whois;port=3306;password=L3tM31n";
 
@@ -121,7 +117,7 @@
             private void Output(object output)
             {
                 //Easier to call this than write the writeLine everytime
-                //Would have been more useful if I used it
+                //Would have been more useful if I used it more than once
                 Console.WriteLine(output);
             }
             public void Delete(String ID)
@@ -134,10 +130,10 @@
                     "WHERE userID = (SELECT userID FROM logindetails WHERE loginID = @ID); " +
 
                     "DELETE emails, usersemail FROM usersemail INNER JOIN emails ON emails.emailID = usersemail.emailID " +
-                    "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID);" +
+                    "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID); " +
 
                     "DELETE users, logindetails FROM logindetails INNER JOIN users ON logindetails.userID = users.userID " +
-                    "WHERE loginID = @ID;" +
+                    "WHERE loginID = @ID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
                 if(cmd.ExecuteNonQuery() != 0)
                 {
@@ -232,13 +228,13 @@
             public void AddNewUser(string ID, string field, string value)
             {
                 //Adds new user to DB
-                //generates new userID
+                //generates new userID - not set to AutoIncrement
                 Random rnd = new Random();
                 string userID = string.Empty;
                 do 
                 {
                     userID = rnd.Next(100000,999999).ToString();
-                    Console.WriteLine(userID);
+                    if(debug) Console.WriteLine(userID);
                 } while (CheckDBID(userID));
                 MySqlCommand cmd = new MySqlCommand();
                 var ins = new MySqlCommand();
@@ -251,8 +247,6 @@
                     "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
                 cmd.Parameters.AddWithValue("@location", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
-                //cmd.Parameters.AddWithValue("@userID1", userID);
-                //cmd.Parameters.AddWithValue("@userID2", userID);
 
                 ins.CommandText = "INSERT INTO loginDetails(userID, loginID) VALUES (@userID, @loginID);";
                 ins.Parameters.AddWithValue("@userID", userID);
@@ -318,58 +312,21 @@
                 else
                 {
                     Console.WriteLine("Cannot update user");
-                    ////Should only happen when the user doesn't have a listed phone/email so shouldn't happen 
-                    //Console.WriteLine("Add to table");
-                    //var ins = new MySqlCommand();
-                    //ins.Connection = conn;
-                    //if (field.ToLower() == "phone")
-                    //{
-                    //    //User has no listed phonenumber
-                    //    ins.CommandText = "INSERT INTO phonenumber(phone, userID) VALUES(@update, (SELECT userID FROM logindetails WHERE loginID = @ID));";
-                    //    ins.Parameters.AddWithValue("@update", update);
-                    //    ins.Parameters.AddWithValue("@ID", ID);
-                    //    ins.ExecuteNonQuery();
-                    //    conn.Close();
-                    //}
-                    //else if (field.ToLower() == "email")
-                    //{
-                    //    Console.WriteLine("Add email");
-                    //    //User has no listed email
-                    //    ins.CommandText = "INSERT INTO emails(email) VALUES(@email);" +
-                    //        "INSERT INTO usersemail(userID, emailID) VALUES( (SELECT userID FROM logindetails WHERE loginID = @ID),(SELECT LAST_INSERT_ID()) );";
-                    //    ins.Parameters.AddWithValue("@email", update);
-                    //    ins.Parameters.AddWithValue("@ID", ID);
-                    //    //ins.Parameters.AddWithValue("@emailID", emailID);
-                    //    if (ins.ExecuteNonQuery() != 0)
-                    //    {
-                    //        ins.Dispose();
-                    //        conn.Close();
-
-                    //        conn.Open();
-                    //        ins = new MySqlCommand();
-                    //        ins.Connection = conn;
-                    //        ins.CommandText = "INSERT userID, emailID INTO usersemail VALUES((SELECT userID FROM loginDetails WHERE loginID = @ID),(SELECT emailID FROM emails WHERE );";
-                    //        //ins.CommandText = "INSERT emailID, email INTO email VALUES(@emailID, @email);";
-                    //        //ins.Parameters.AddWithValue("@emailID", emailID);
-                    //        ins.Parameters.AddWithValue("@ID", ID);
-                    //        // ins.ExecuteNonQuery();
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    //Should never happen
-                    //    Console.WriteLine("Unable to update database");
-                    //}
                 }
             }
         }
         static string HTTPUpdate(string line, StreamReader sr)
         {
             //Update request from webpage
-            Console.WriteLine(line);
+            if(debug) Console.WriteLine(line);
             String[] slices = line.Split(new char[] { '&' }, 2);
             String ID = slices[0].Substring(5);
-            String value = slices[1].Substring(13);
+            String value = string.Empty;
+            if (slices[1].Substring(0, 9) == "location=")
+            {
+                value = slices[1].Substring(9);
+            }
+            else { value = slices[1].Substring(13); }
             if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
             string conStr = string.Empty;
             MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
@@ -448,16 +405,13 @@
                         line = sr.ReadLine();
                         if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
                     }
-                    Console.WriteLine("Line: " + line);
+                    if(debug) Console.WriteLine("Line: " + line);
                     // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
 
                     String[] slices = line.Split(new char[] { '&' }, 2);
-                    if (slices.Length < 2 //||
-                                          //slices[0].Substring(7,5) != "name=" || 
-                                          //slices[1].Substring(0,13) != "userLocation="
-                        )
+                    if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
                     {
                         // This is an invalid request
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
@@ -500,8 +454,8 @@
                     }
                     sw.Flush();
 
-                    Console.WriteLine(ID);
-                    Console.WriteLine(line);
+                    if(debug) Console.WriteLine(ID);
+                    if(debug) Console.WriteLine(line);
                 }
                 else
                 {
