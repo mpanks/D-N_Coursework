@@ -316,40 +316,6 @@
                 }
             }
         }
-        static string HTTPUpdate(string[] userID, string[] update, StreamReader sr)
-        {
-            //Update request from webpage
-            if(debug) Console.WriteLine($"{userID[0]} {userID[1]} {update[0]} {update[1]}");
-            //String[] slices = line.Split(new char[] { '&' }, 2);
-            //String ID = slices[0].Substring(5);
-            //String value = string.Empty;
-            string conStr = string.Empty;
-            MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
-            "database=whois;port=3306;password=L3tM31n;");
-
-            MySqlCommand cmd = new MySqlCommand();
-            cmd.Connection = conn;
-            conn.Open();
-            switch (update[0])
-            {
-                case "location":
-                case "userLocation":
-                    cmd.CommandText = "UPDATE whois.users SET userLocation = @update WHERE userID = " +
-                     "(SELECT userID FROM logindetails WHERE loginID = @ID);";
-                    break;
-                //value = slices[1].Substring(9);
-            }
-            //else { value = slices[1].Substring(13); }
-            if (debug) Console.WriteLine($"Received an update request for '{userID[1]}' to update '{update[0]}' to '{update[1]}'");
-
-
-
-            cmd.Parameters.AddWithValue("@update", update[1]);
-            cmd.Parameters.AddWithValue("@ID", userID[1]);
-            cmd.ExecuteNonQuery();
-            conn.Close();
-            return $"Updated Users '{update[0]} with ID: {userID[1]} to: {update[1]}";
-        }
         static void RunServer()
         {
             //Args array is empty - starts server
@@ -402,6 +368,7 @@
                     // The we have an update
                     if (debug) Console.WriteLine("Received an update request");
                     int content_length = 0;
+
                     while (line != "")
                     {
                         if (line.StartsWith("Content-Length: "))
@@ -411,12 +378,14 @@
                         line = sr.ReadLine();
                         if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
                     }
+
                     if(debug) Console.WriteLine("Line: " + line);
                     // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
                     string[] userID = new string[2];
                     string[] update = new string[2];
+
                     String[] slices = line.Split(new char[] { '&' }, 2);
                     try
                     {
@@ -434,18 +403,19 @@
                         Console.WriteLine($"Unrecognised command: '{line}'");
                         return;
                     }
-                    if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
-                    {
+                    //if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
+                    //{
 
-                    }
+                    //}
                     //String ID = slices[0].Substring(5);    // The bit after name=
                     //String value = slices[1].Substring(9); // The bit after location=
-                    string output = HTTPUpdate(userID, update, sr);
+                    ServerCommands servCom = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
+                    servCom.Update(userID[1], update[0], update[1]);
                     //Console.Write(output);
                     sw.WriteLine("HTTP/1.1 200 OK");
                     sw.WriteLine("Content-Type: text/plain");
                     sw.WriteLine();
-                    sw.WriteLine(output);
+                    sw.WriteLine($"updated {update[0]} to {update[1]} for userID {userID[1]}");
                     sw.Flush();
                 }
                 else if (line.StartsWith("GET") && line.EndsWith("HTTP/1.1"))
@@ -462,7 +432,7 @@
                     string output = sc.Lookup(ID, "userLocation");
                     if (output != "")
                     {
-                        sw.WriteLine($"Lookup performed on ID: {ID} <br>");
+                        sw.WriteLine($"Lookup performed on ID: {ID}");
                         sw.WriteLine($"Result: {output}");
                     }
                     else
