@@ -3,6 +3,7 @@
     using MySql.Data;
     using MySql.Data.MySqlClient;
     using Org.BouncyCastle.Asn1.Utilities;
+    using Org.BouncyCastle.Bcpg;
     using System.Diagnostics;
     using System.Net.Sockets;
     using System.Reflection.Metadata;
@@ -315,19 +316,13 @@
                 }
             }
         }
-        static string HTTPUpdate(string line, StreamReader sr)
+        static string HTTPUpdate(string[] userID, string[] update, StreamReader sr)
         {
             //Update request from webpage
-            if(debug) Console.WriteLine(line);
-            String[] slices = line.Split(new char[] { '&' }, 2);
-            String ID = slices[0].Substring(5);
-            String value = string.Empty;
-            if (slices[1].Substring(0, 9) == "location=")
-            {
-                value = slices[1].Substring(9);
-            }
-            else { value = slices[1].Substring(13); }
-            if (debug) Console.WriteLine($"Received an update request for '{ID}' to '{value}'");
+            if(debug) Console.WriteLine($"{userID[0]} {userID[1]} {update[0]} {update[1]}");
+            //String[] slices = line.Split(new char[] { '&' }, 2);
+            //String ID = slices[0].Substring(5);
+            //String value = string.Empty;
             string conStr = string.Empty;
             MySqlConnection conn = new MySqlConnection("Server=localhost; user=root;" +
             "database=whois;port=3306;password=L3tM31n;");
@@ -335,14 +330,25 @@
             MySqlCommand cmd = new MySqlCommand();
             cmd.Connection = conn;
             conn.Open();
+            switch (update[0])
+            {
+                case "location":
+                case "userLocation":
+                    cmd.CommandText = "UPDATE whois.users SET userLocation = @update WHERE userID = " +
+                     "(SELECT userID FROM logindetails WHERE loginID = @ID);";
+                    break;
+                //value = slices[1].Substring(9);
+            }
+            //else { value = slices[1].Substring(13); }
+            if (debug) Console.WriteLine($"Received an update request for '{userID[1]}' to update '{update[0]}' to '{update[1]}'");
 
-            cmd.CommandText = "UPDATE whois.users SET userLocation = @location WHERE userID = " +
-                "(SELECT userID FROM logindetails WHERE loginID = @ID);";
-            cmd.Parameters.AddWithValue("@location", value);
-            cmd.Parameters.AddWithValue("@ID", ID);
+
+
+            cmd.Parameters.AddWithValue("@update", update[1]);
+            cmd.Parameters.AddWithValue("@ID", userID[1]);
             cmd.ExecuteNonQuery();
             conn.Close();
-            return $"Updated Users location with ID: {ID} to: {value}";
+            return $"Updated Users '{update[0]} with ID: {userID[1]} to: {update[1]}";
         }
         static void RunServer()
         {
@@ -409,9 +415,16 @@
                     // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
-
+                    string[] userID = new string[2];
+                    string[] update = new string[2];
                     String[] slices = line.Split(new char[] { '&' }, 2);
-                    if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
+                    try
+                    {
+                        userID = slices[0].Split(new char[] { '=' }, 2);
+                        update = slices[1].Split(new char[] { '=' }, 2);
+                        
+                    }
+                    catch(Exception e)
                     {
                         // This is an invalid request
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
@@ -421,9 +434,13 @@
                         Console.WriteLine($"Unrecognised command: '{line}'");
                         return;
                     }
+                    if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
+                    {
+
+                    }
                     //String ID = slices[0].Substring(5);    // The bit after name=
                     //String value = slices[1].Substring(9); // The bit after location=
-                    string output = HTTPUpdate(line, sr);
+                    string output = HTTPUpdate(userID, update, sr);
                     //Console.Write(output);
                     sw.WriteLine("HTTP/1.1 200 OK");
                     sw.WriteLine("Content-Type: text/plain");
