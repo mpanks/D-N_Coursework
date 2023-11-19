@@ -214,14 +214,16 @@
                         }
                     }
                 }
-                if (output != "")
+                if (output != null)
                 {
-                    Console.WriteLine(output);
+                    if (output.Split(' ')[1] != "") Console.WriteLine(output);
+                    else Console.WriteLine($"{ID} has no listed {field}");
+
                     return output;
                 }
                 else
                 {
-                    //Shouldn't happen
+                    //User has nothing listed in 'field', shouldn't happen (theoretically)
                     Console.WriteLine($"Error: Cannot find {ID}");
                     return null;
                 }
@@ -403,15 +405,9 @@
                         Console.WriteLine($"Unrecognised command: '{line}'");
                         return;
                     }
-                    //if (slices.Length < 2 || slices[0].Substring(0, 5) != "name=" || !(slices[1].Substring(0, 13) != "userLocation=" || slices[1].Substring(0, 9) != "location="))
-                    //{
-
-                    //}
-                    //String ID = slices[0].Substring(5);    // The bit after name=
-                    //String value = slices[1].Substring(9); // The bit after location=
                     ServerCommands servCom = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
                     servCom.Update(userID[1], update[0], update[1]);
-                    //Console.Write(output);
+
                     sw.WriteLine("HTTP/1.1 200 OK");
                     sw.WriteLine("Content-Type: text/plain");
                     sw.WriteLine();
@@ -422,17 +418,29 @@
                 {
                     // then we have a lookup
                     if (debug) Console.WriteLine("Received a lookup request");
-
-                    String[] slices = line.Split(" ");  // Split into 3 pieces
-                    String ID = slices[1].Substring(7);  // start at the 7th letter of the middle slice - skip `/?name=`
-
-                    sw.WriteLine("HTTP/1.1 200 OK");
-                    sw.WriteLine("Content-Type: text/plain");
-                    sw.WriteLine();//Blank line IS IMPORTANT
-                    string output = sc.Lookup(ID, "userLocation");
-                    if (output != "")
+                    String[] slices = new string[3];
+                    String[] command = new String[2];
+                    try
                     {
-                        sw.WriteLine($"Lookup performed on ID: {ID}");
+                        slices = line.Split(" ");  // Split into 3 pieces
+                        command = slices[1].Split("=", 2);  
+
+                        sw.WriteLine("HTTP/1.1 200 OK");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();//Blank line IS IMPORTANT
+                    }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine($"Unrecognised command or ID in {line}");
+                        sw.WriteLine("HTTP/1.1 400 Bad Request");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();
+                    }
+
+                    string output = sc.Lookup(command[1], "userLocation");
+                    if (output!= null)
+                    {
+                        sw.WriteLine($"Lookup performed on ID: {command[1]}");
                         sw.WriteLine($"Result: {output}");
                     }
                     else
@@ -441,7 +449,7 @@
                     }
                     sw.Flush();
 
-                    if(debug) Console.WriteLine(ID);
+                    if(debug) Console.WriteLine(command[1]);
                     if(debug) Console.WriteLine(line);
                 }
                 else

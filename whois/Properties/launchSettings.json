@@ -1,7 +1,8 @@
 {
   "profiles": {
     "whois": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "cssbct?email\r\n123456?email"
     }
   }
 }
