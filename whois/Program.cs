@@ -4,6 +4,7 @@
     using MySql.Data.MySqlClient;
     using Org.BouncyCastle.Asn1.Utilities;
     using Org.BouncyCastle.Bcpg;
+    using System.ComponentModel.DataAnnotations;
     using System.Diagnostics;
     using System.Net.Sockets;
     using System.Reflection.Metadata;
@@ -104,7 +105,7 @@
 
                 cmd.CommandText = "SELECT * from loginDetails WHERE loginID = @ID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
-                if(cmd.ExecuteScalar() != null)
+                if (cmd.ExecuteScalar() != null)
                 {
                     //ID is present
                     return true;
@@ -126,7 +127,7 @@
                 //Removes information stored under a given loginID
                 if (debug) Console.WriteLine($"Delete record '{ID}' from DataBase");
                 var cmd = new MySqlCommand();
-                cmd.Connection= conn;
+                cmd.Connection = conn;
                 cmd.CommandText = "DELETE phonenumber FROM phonenumber " +
                     "WHERE userID = (SELECT userID FROM logindetails WHERE loginID = @ID); " +
 
@@ -136,7 +137,7 @@
                     "DELETE users, logindetails FROM logindetails INNER JOIN users ON logindetails.userID = users.userID " +
                     "WHERE loginID = @ID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
-                if(cmd.ExecuteNonQuery() != 0)
+                if (cmd.ExecuteNonQuery() != 0)
                 {
                     Console.WriteLine($"User with ID {ID} has been deleted");
                 }
@@ -173,7 +174,7 @@
                     }
                     Console.WriteLine(output);
                 }
-                if(output == "")
+                if (output == "")
                 {
                     Console.WriteLine("Cannot find user");
                 }
@@ -207,18 +208,18 @@
                     {
                         for (int i = 0; i < reader.FieldCount; i++)
                         {
-                            if (reader.GetName(i).Equals(field) && output != null)
+                            if (reader.GetName(i).Equals(field) && output != string.Empty)
                             {
                                 output += $"{reader.GetName(i)}: {reader.GetString(i)}\n";
                             }
                         }
                     }
                 }
-                if (output != null)
+                if (output != string.Empty)
                 {
-                    if (output.Split(' ')[1] != "") Console.WriteLine(output);
-                    else Console.WriteLine($"{ID} has no listed {field}");
+                    if (output.Split(' ')[1] == "") output = $"{ID} has no listed {field}";
 
+                    Console.WriteLine(output);
                     return output;
                 }
                 else
@@ -234,20 +235,69 @@
                 //generates new userID - not set to AutoIncrement
                 Random rnd = new Random();
                 string userID = string.Empty;
-                do 
+                do
                 {
-                    userID = rnd.Next(100000,999999).ToString();
-                    if(debug) Console.WriteLine(userID);
+                    userID = rnd.Next(100000, 999999).ToString();
+                    if (debug) Console.WriteLine(userID);
                 } while (CheckDBID(userID));
                 MySqlCommand cmd = new MySqlCommand();
                 var ins = new MySqlCommand();
                 ins.Connection = conn;
                 cmd.Connection = conn;
 
-                cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @location, ' ',' ',' ',' '); " +
-                    "INSERT INTO emails(email) VALUES(' '); " +
-                    "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
-                    "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                switch(field.ToLower())
+                {
+                    case "phone":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',' ',' ',' '); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, @update);";
+                        break;
+                    case "email":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',' ',' ',' '); " +
+                        "INSERT INTO emails(email) VALUES(@update); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    case "location":
+                    case "userlocation":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @update, ' ',' ',' ',' '); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    case "forenames":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', @update,' ',' ',' '); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    case "surname":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',@update,' ',' '); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    case "title":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',' ',@update,' '); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    case "position":
+                        cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',' ',' ',@update); " +
+                        "INSERT INTO emails(email) VALUES(' '); " +
+                        "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                        "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
+                        break;
+                    default:
+                        Console.WriteLine($"Unrecognised field {field})");
+                        return;
+                }
+                //cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @update, ' ',' ',' ',' '); " +
+                //    "INSERT INTO emails(email) VALUES(' '); " +
+                //    "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
+                //    "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
                 cmd.Parameters.AddWithValue("@location", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
 
@@ -260,7 +310,7 @@
 
                 Console.WriteLine("Added new user");
             }
-            public void Update(string ID, string field, string update)
+            public string Update(string ID, string field, string update)
             {
                 //Updates given field with given loginID and update info
                 MySqlCommand cmd = new MySqlCommand();
@@ -299,22 +349,24 @@
                         break;
                     default:
                         Console.WriteLine($"Unkown field {field}");
-                        return;
+                        return $"Unknown field {field}";
 
                 }
                 cmd.Parameters.AddWithValue("@update", update);
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
-                if (cmd.ExecuteNonQuery() >=1)
+                if (cmd.ExecuteNonQuery() >= 1)
                 {
                     //cmd.ExecuteNonQuery();
                     Console.WriteLine($"Updated {field} to {update} for {ID}");
                     conn.Close();
+                    return $"Updated {field} to {update} for {ID}";
                 }
                 else
                 {
-                    Console.WriteLine("Cannot update user");
+                    Console.WriteLine($"Cannot update user {ID}");
+                    return $"Unknown field {field}";
                 }
             }
         }
@@ -381,7 +433,7 @@
                         if (debug) Console.WriteLine($"Skipped Header Line: '{line}'");
                     }
 
-                    if(debug) Console.WriteLine("Line: " + line);
+                    if (debug) Console.WriteLine("Line: " + line);
                     // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
@@ -393,9 +445,9 @@
                     {
                         userID = slices[0].Split(new char[] { '=' }, 2);
                         update = slices[1].Split(new char[] { '=' }, 2);
-                        
+
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         // This is an invalid request
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
@@ -406,13 +458,23 @@
                         return;
                     }
                     ServerCommands servCom = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
-                    servCom.Update(userID[1], update[0], update[1]);
-
-                    sw.WriteLine("HTTP/1.1 200 OK");
-                    sw.WriteLine("Content-Type: text/plain");
-                    sw.WriteLine();
-                    sw.WriteLine($"updated {update[0]} to {update[1]} for userID {userID[1]}");
-                    sw.Flush();
+                    string output = servCom.Update(userID[1], update[0], update[1]);
+                    if (output.Contains("Unknown"))
+                    {
+                        sw.WriteLine("HTTP/1.1 400 Bad Request");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();
+                        sw.WriteLine(output);
+                        sw.Flush();
+                    }
+                    else
+                    {
+                        sw.WriteLine("HTTP/1.1 200 OK");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();
+                        sw.WriteLine(output);
+                        sw.Flush();
+                    }
                 }
                 else if (line.StartsWith("GET") && line.EndsWith("HTTP/1.1"))
                 {
@@ -423,13 +485,13 @@
                     try
                     {
                         slices = line.Split(" ");  // Split into 3 pieces
-                        command = slices[1].Split("=", 2);  
+                        command = slices[1].Split("=", 2);
 
                         sw.WriteLine("HTTP/1.1 200 OK");
                         sw.WriteLine("Content-Type: text/plain");
                         sw.WriteLine();//Blank line IS IMPORTANT
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Console.WriteLine($"Unrecognised command or ID in {line}");
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
@@ -438,7 +500,7 @@
                     }
 
                     string output = sc.Lookup(command[1], "userLocation");
-                    if (output!= null)
+                    if (output != null)
                     {
                         sw.WriteLine($"Lookup performed on ID: {command[1]}");
                         sw.WriteLine($"Result: {output}");
@@ -449,8 +511,8 @@
                     }
                     sw.Flush();
 
-                    if(debug) Console.WriteLine(command[1]);
-                    if(debug) Console.WriteLine(line);
+                    if (debug) Console.WriteLine(command[1]);
+                    if (debug) Console.WriteLine(line);
                 }
                 else
                 {
