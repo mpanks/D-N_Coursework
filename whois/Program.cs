@@ -224,8 +224,8 @@
                 }
                 else
                 {
-                    //User has nothing listed in 'field', shouldn't happen (theoretically)
-                    Console.WriteLine($"Error: Cannot find {ID}");
+                    //Cannot find field
+                    Console.WriteLine($"Unknown field {field}");
                     return null;
                 }
             }
