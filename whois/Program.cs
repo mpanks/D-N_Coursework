@@ -14,7 +14,7 @@
 
     internal class Program
     {
-        static bool debug = true; //TODO change debug to false before final commit
+        static bool debug = false; //TODO change debug to false before final commit
         static void Main(string[] args)
         {
             Console.WriteLine("Starting Server");
@@ -42,9 +42,9 @@
                 //Gets base info in command from console
                 String[] slice = command.Split(new char[] { '?' }, 2);
                 String ID = slice[0];
-                String operation = null;
-                String update = null;
-                String field = null;
+                String operation = string.Empty;
+                String update = string.Empty;
+                String field = string.Empty;
                 if (slice.Length == 2)
                 {
                     operation = slice[1];
@@ -56,16 +56,20 @@
                 if (debug) Console.WriteLine($"Operation on ID '{ID}'");
                 ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
 
-                if (operation == null) //Nothing after '?'
+                if(!servCmd.CheckDBID(ID))
+                {
+
+                }
+                if (operation == string.Empty) //Nothing after '?'
                 {
                     servCmd.Dump(ID);
                 }
-                else if (update == null && !servCmd.CheckDBID(ID))  //Cannot find ID in DB, and update field is null
+                else if (update == string.Empty && !servCmd.CheckDBID(ID))  //Cannot find ID in DB, and update field is null
                                                                     //Null updates are caught in update function
                 {
                     Console.WriteLine($"User {ID} is unknown");
                 }
-                else if (operation == "")
+                else if (operation == string.Empty)
                 {
                     servCmd.Delete(ID);
                     return;
@@ -75,7 +79,7 @@
                     //Add New User
                     servCmd.AddNewUser(ID, field, update);
                 }
-                else if (update == null)
+                else if (update == string.Empty)
                 {
                     servCmd.Lookup(ID, field);
                 }
@@ -236,7 +240,7 @@
                 {
                     //Cannot find field
                     Console.WriteLine($"Unknown field {field}");
-                    return null;
+                    return string.Empty;
                 }
             }
             public void AddNewUser(string ID, string field, string value)
@@ -395,11 +399,10 @@
                     return $"Unknown field {field}";
                 }
             }
-            private static bool CheckEmail(string email)
+            private bool CheckEmail(string email)
             {
                 //Source: https://learn.microsoft.com/en-us/dotnet/standard/base-types/how-to-verify-that-strings-are-in-valid-email-format
-                if (string.IsNullOrWhiteSpace(email)) return false;
-
+                //Checks emails are in a valid format, returns true for valid emails and false for invalid
                 try
                 {
                     // Normalize domain
@@ -409,24 +412,23 @@
                     // Normalizes domain
                     string DomainMapper(Match match)
                     {
-                        // Use IdnMapping class to convert Unicode domain names.
+                        //Converts Unicode domain names.
                         var idn = new IdnMapping();
 
                         // Pull out and process domain name (throws ArgumentException on invalid)
                         string domain = idn.GetAscii(match.Groups[2].Value);
 
-                        return match.Groups[1].Value + domain
-                            ;
+                        return match.Groups[1].Value + domain;
                     }
                 }
                 catch (RegexMatchTimeoutException e)
                 {
-                    if(debug) Console.WriteLine("Regex Match time out: "+e.Message);
+                    if(debug) Console.WriteLine("Regex Match time out, email is invalid: "+e.Message);
                     return false;
                 }
                 catch (ArgumentException e)
                 {
-                    if (debug) Console.WriteLine("Unable to process domain: "+e.Message);
+                    if (debug) Console.WriteLine("Unable to process domain, email is invalid: "+e.Message);
                     return false;
                 }
 
@@ -438,7 +440,7 @@
                 }
                 catch (RegexMatchTimeoutException e)
                 {
-                    if (debug) Console.WriteLine("Regex Match time out: "+e.Message);
+                    if (debug) Console.WriteLine("Regex Match time out, email is invalid: "+e.Message);
                     return false;
                 }
             }

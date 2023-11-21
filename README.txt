@@ -3,10 +3,10 @@ Location of files and folders:
 Creating database queries: DN_CreateDB_Queries
 Add test data: DN_InsertTestDataDB_Queries
 
-Code: Program.cs, can be found under whois
+Code: Program.cs
 whois.exe: can be found in whois->bin->debug->net6.0, the file is near the bottom of the folder
 
-ERD: DN_ERD_PDF, can be found in "whois" folder
+ERD: DN_ERD_PDF
 
 Special Instructions:
 
