@@ -6,9 +6,12 @@
     using Org.BouncyCastle.Bcpg;
     using System.ComponentModel.DataAnnotations;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Net.Sockets;
     using System.Reflection.Metadata;
+    using System.Text.RegularExpressions;
+
     internal class Program
     {
         static bool debug = true; //TODO change debug to false before final commit
@@ -254,7 +257,7 @@
 
                 //Creates SQL command based on given field
                 //MySQL doesn't support fields being added as parameters
-                switch(field.ToLower())
+                switch (field.ToLower())
                 {
                     case "phonenumber":
                     case "phone":
@@ -322,7 +325,7 @@
                 MySqlCommand cmd = new MySqlCommand();
 
                 //Set command text based on given field
-                    switch (field.ToLower())
+                switch (field.ToLower())
                 {
                     case "userlocation":
                     case "location":
@@ -352,16 +355,24 @@
                             "AND phonenumber.userID = users.userID;";
                         break;
                     case "email":
-                        cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID IN " +
-                            "(SELECT emailID FROM usersEmail WHERE userID IN " +
-                            "(SELECT userID FROM loginDetails WHERE loginID = @ID));";
+                        if (CheckEmail(update))
+                        {
+                            cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID IN " +
+                                "(SELECT emailID FROM usersEmail WHERE userID IN " +
+                                "(SELECT userID FROM loginDetails WHERE loginID = @ID));";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Invalid email {update}");
+                            return $"Invalid email {update}";
+                        }
                         break;
                     default:
                         Console.WriteLine($"Unkown field {field}");
                         return $"Unknown field {field}";
 
                 }
-                if(update==string.Empty)
+                if (update == string.Empty)
                 {
                     Console.WriteLine($"Cannot update {field} to null");
                     return $"Cannot update {field} to null";
@@ -382,6 +393,53 @@
                     //No fields affected
                     Console.WriteLine($"Cannot update user {ID}, unknown field {field}");
                     return $"Unknown field {field}";
+                }
+            }
+            private static bool CheckEmail(string email)
+            {
+                //Source: https://learn.microsoft.com/en-us/dotnet/standard/base-types/how-to-verify-that-strings-are-in-valid-email-format
+                if (string.IsNullOrWhiteSpace(email)) return false;
+
+                try
+                {
+                    // Normalize domain
+                    email = Regex.Replace(email, @"(@)(.+)$", DomainMapper,
+                                          RegexOptions.None, TimeSpan.FromMilliseconds(200));
+
+                    // Normalizes domain
+                    string DomainMapper(Match match)
+                    {
+                        // Use IdnMapping class to convert Unicode domain names.
+                        var idn = new IdnMapping();
+
+                        // Pull out and process domain name (throws ArgumentException on invalid)
+                        string domain = idn.GetAscii(match.Groups[2].Value);
+
+                        return match.Groups[1].Value + domain
+                            ;
+                    }
+                }
+                catch (RegexMatchTimeoutException e)
+                {
+                    if(debug) Console.WriteLine("Regex Match time out: "+e.Message);
+                    return false;
+                }
+                catch (ArgumentException e)
+                {
+                    if (debug) Console.WriteLine("Unable to process domain: "+e.Message);
+                    return false;
+                }
+
+                try
+                {
+                    return Regex.IsMatch(email,
+                        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+                        RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
+                }
+                catch (RegexMatchTimeoutException e)
+                {
+                    if (debug) Console.WriteLine("Regex Match time out: "+e.Message);
+                    return false;
                 }
             }
         }
@@ -469,7 +527,7 @@
                         sw.WriteLine();
                         sw.WriteLine($"Unrecognised command {line}");
                         sw.Flush();
-                        if(debug) Console.WriteLine($"Unrecognised command: '{line}' " +e.ToString());
+                        if (debug) Console.WriteLine($"Unrecognised command: '{line}' " + e.ToString());
                         return;
                     }
                     if (update[0].ToLower() != "location" && update[0].ToLower() != "userlocation")

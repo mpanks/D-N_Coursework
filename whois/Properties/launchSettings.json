@@ -1,7 +1,8 @@
 {
   "profiles": {
     "whois": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "123456?email=m.panks@hull.ac.uk\r\n123456?email"
     }
   }
 }
