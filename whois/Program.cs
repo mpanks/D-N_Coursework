@@ -325,34 +325,34 @@
                 {
                     case "userlocation":
                     case "location":
-                        cmd.CommandText = "UPDATE Users SET userLocation = @update WHERE userID = " +
+                        cmd.CommandText = "UPDATE Users SET userLocation = @update WHERE userID IN " +
                             "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "forename":
-                        cmd.CommandText = "UPDATE Users SET forenames = @update WHERE userID = " +
+                        cmd.CommandText = "UPDATE Users SET forenames = @update WHERE userID IN " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "lastname":
-                        cmd.CommandText = "UPDATE Users SET surname = @update WHERE userID = " +
+                        cmd.CommandText = "UPDATE Users SET surname = @update WHERE userID IN " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "title":
-                        cmd.CommandText = "UPDATE Users SET title = @update WHERE userID = " +
+                        cmd.CommandText = "UPDATE Users SET title = @update WHERE userID IN " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "position":
-                        cmd.CommandText = "UPDATE Users SET position = @update WHERE userID = " +
+                        cmd.CommandText = "UPDATE Users SET position = @update WHERE userID IN " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
                     case "phonenumber":
                     case "phone":
-                        cmd.CommandText = "UPDATE phonenumber, users SET phone = @update WHERE users.userID = " +
+                        cmd.CommandText = "UPDATE phonenumber, users SET phone = @update WHERE users.userID IN " +
                             "(SELECT userID FROM loginDetails WHERE loginID = @ID) " +
                             "AND phonenumber.userID = users.userID;";
                         break;
                     case "email":
-                        cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID = " +
-                            "(SELECT emailID FROM usersEmail WHERE userID = " +
+                        cmd.CommandText = "UPDATE emails SET email = @update WHERE emailID IN " +
+                            "(SELECT emailID FROM usersEmail WHERE userID IN " +
                             "(SELECT userID FROM loginDetails WHERE loginID = @ID));";
                         break;
                     default:
