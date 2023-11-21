@@ -2,7 +2,7 @@
   "profiles": {
     "whois": {
       "commandName": "Project",
-      "commandLineArgs": "cssbct?asdfads\r\ncssbct?asdfsa=asdf\r\nasdf?cssbct\r\nasdfwr?cssbct=asdf\r\nadf?=\r\n"
+      "commandLineArgs": "cssbct?email\r\nEnigma?email\r\ncssbct?phonenumber\r\nAnalytical?forenames"
     }
   }
 }

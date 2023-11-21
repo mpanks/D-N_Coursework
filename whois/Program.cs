@@ -6,6 +6,7 @@
     using Org.BouncyCastle.Bcpg;
     using System.ComponentModel.DataAnnotations;
     using System.Diagnostics;
+    using System.Net;
     using System.Net.Sockets;
     using System.Reflection.Metadata;
     internal class Program
@@ -32,6 +33,10 @@
             if (debug) Console.WriteLine($"\nCommand: {command}");
             try
             {
+                //<loginID>?<field>=<update>
+                //operation is <field>=<update>
+
+                //Gets base info in command from console
                 String[] slice = command.Split(new char[] { '?' }, 2);
                 String ID = slice[0];
                 String operation = null;
@@ -44,13 +49,16 @@
                     field = pieces[0];
                     if (pieces.Length == 2) update = pieces[1];
                 }
+
                 if (debug) Console.WriteLine($"Operation on ID '{ID}'");
                 ServerCommands servCmd = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
-                if (operation == null)
+
+                if (operation == null) //Nothing after '?'
                 {
                     servCmd.Dump(ID);
                 }
-                else if ((operation == null || update == null) && !servCmd.CheckDBID(ID))
+                else if (update == null && !servCmd.CheckDBID(ID))  //Cannot find ID in DB, and update field is null
+                                                                    //Null updates are caught in update function
                 {
                     Console.WriteLine($"User {ID} is unknown");
                 }
@@ -95,7 +103,7 @@
                     $"database={DatabaseName};port={PortNum};password={Password}";
                 conn = new MySqlConnection(conStr);
                 conn.Open();
-                this.Output("Connection opened");
+                Console.WriteLine("Connection opened");
             }
             public bool CheckDBID(string ID)
             {
@@ -116,12 +124,7 @@
                     return false;
                 }
             }
-            private void Output(object output)
-            {
-                //Easier to call this than write the writeLine everytime
-                //Would have been more useful if I used it more than once
-                Console.WriteLine(output);
-            }
+
             public void Delete(String ID)
             {
                 //Removes information stored under a given loginID
@@ -134,6 +137,7 @@
                     "DELETE emails, usersemail FROM usersemail INNER JOIN emails ON emails.emailID = usersemail.emailID " +
                     "WHERE usersemail.userID = (SELECT userID FROM loginDetails WHERE loginID = @ID); " +
 
+                    //Login details must be deleted last due to dependencies
                     "DELETE users, logindetails FROM logindetails INNER JOIN users ON logindetails.userID = users.userID " +
                     "WHERE loginID = @ID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
@@ -141,6 +145,7 @@
                 {
                     Console.WriteLine($"User with ID {ID} has been deleted");
                 }
+                else { Console.WriteLine($"Unable to remove user {ID}"); } //Should never happen
             }
             public string Dump(string ID)
             {
@@ -190,17 +195,17 @@
                     " FROM users, logindetails, emails, phonenumber, usersemail " +
                     "WHERE users.userID = logindetails.userID " +
                     "AND logindetails.loginID = @ID " +
-                    "AND users.userID = " +
-                    "(SELECT userID FROM loginDetails WHERE loginID = @ID1) " +
+                    "AND users.userID IN " +
+                    "(SELECT userID FROM loginDetails WHERE loginID = @ID) " +
                     "AND users.userID = usersemail.userID " +
                     "AND usersemail.emailID = emails.emailID " +
                     "AND phonenumber.userID = users.userID;";
                 cmd.Parameters.AddWithValue("@ID", ID);
-                cmd.Parameters.AddWithValue("@ID1", ID);
 
                 cmd.ExecuteNonQuery();
                 string output = string.Empty;
                 if (field.ToLower() == "location" || field.ToLower() == "userlocation") field = "userLocation";
+                else if (field.ToLower() == "phone" || field.ToLower() == "phonenumber") field = "phone";
 
                 using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
@@ -208,7 +213,7 @@
                     {
                         for (int i = 0; i < reader.FieldCount; i++)
                         {
-                            if (reader.GetName(i).Equals(field) && output != string.Empty)
+                            if (reader.GetName(i).Equals(field) && !output.Contains(reader.GetString(i)))
                             {
                                 output += $"{reader.GetName(i)}: {reader.GetString(i)}\n";
                             }
@@ -217,6 +222,7 @@
                 }
                 if (output != string.Empty)
                 {
+                    //Checks user has a stored value in the given field
                     if (output.Split(' ')[1] == "") output = $"{ID} has no listed {field}";
 
                     Console.WriteLine(output);
@@ -245,8 +251,11 @@
                 ins.Connection = conn;
                 cmd.Connection = conn;
 
+                //Creates SQL command based on given field
+                //MySQL doesn't support fields being added as parameters
                 switch(field.ToLower())
                 {
+                    case "phonenumber":
                     case "phone":
                         cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, ' ', ' ',' ',' ',' '); " +
                         "INSERT INTO emails(email) VALUES(' '); " +
@@ -291,14 +300,10 @@
                         "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
                         break;
                     default:
-                        Console.WriteLine($"Unrecognised field {field})");
+                        Console.WriteLine($"Unrecognised field {field}");
                         return;
                 }
-                //cmd.CommandText = "INSERT INTO users(userID, userLocation, forenames, surname, title, position) VALUES(@userID, @update, ' ',' ',' ',' '); " +
-                //    "INSERT INTO emails(email) VALUES(' '); " +
-                //    "INSERT INTO usersemail(userID, emailID) VALUES( @userID, (SELECT LAST_INSERT_ID()) ); " +
-                //    "INSERT INTO phonenumber(userID, phone) VALUES(@userID, ' ');";
-                cmd.Parameters.AddWithValue("@location", value);
+                cmd.Parameters.AddWithValue("@update", value);
                 cmd.Parameters.AddWithValue("@userID", userID);
 
                 ins.CommandText = "INSERT INTO loginDetails(userID, loginID) VALUES (@userID, @loginID);";
@@ -314,6 +319,8 @@
             {
                 //Updates given field with given loginID and update info
                 MySqlCommand cmd = new MySqlCommand();
+
+                //Set command text based on given field
                 switch (field.ToLower())
                 {
                     case "userlocation":
@@ -337,6 +344,7 @@
                         cmd.CommandText = "UPDATE Users SET position = @update WHERE userID = " +
                         "(SELECT userID FROM logindetails WHERE loginID = @ID);";
                         break;
+                    case "phonenumber":
                     case "phone":
                         cmd.CommandText = "UPDATE phonenumber, users SET phone = @update WHERE users.userID = " +
                             "(SELECT userID FROM loginDetails WHERE loginID = @ID) " +
@@ -352,20 +360,26 @@
                         return $"Unknown field {field}";
 
                 }
+                if(update==string.Empty)
+                {
+                    Console.WriteLine($"Cannot update {field} to null");
+                    return $"Cannot update {field} to null";
+                }
                 cmd.Parameters.AddWithValue("@update", update);
                 cmd.Parameters.AddWithValue("@ID", ID);
 
                 cmd.Connection = conn;
                 if (cmd.ExecuteNonQuery() >= 1)
                 {
-                    //cmd.ExecuteNonQuery();
+                    //Checks if fields have been affected
                     Console.WriteLine($"Updated {field} to {update} for {ID}");
                     conn.Close();
                     return $"Updated {field} to {update} for {ID}";
                 }
                 else
                 {
-                    Console.WriteLine($"Cannot update user {ID}");
+                    //No fields affected
+                    Console.WriteLine($"Cannot update user {ID}, unknown field {field}");
                     return $"Unknown field {field}";
                 }
             }
@@ -434,7 +448,6 @@
                     }
 
                     if (debug) Console.WriteLine("Line: " + line);
-                    // line = socketStream.Read(content_length);
                     line = "";
                     for (int i = 0; i < content_length; i++) line += (char)sr.Read();
                     string[] userID = new string[2];
@@ -453,8 +466,9 @@
                         sw.WriteLine("HTTP/1.1 400 Bad Request");
                         sw.WriteLine("Content-Type: text/plain");
                         sw.WriteLine();
+                        sw.WriteLine($"Unrecognised command {line}");
                         sw.Flush();
-                        Console.WriteLine($"Unrecognised command: '{line}'");
+                        if(debug) Console.WriteLine($"Unrecognised command: '{line}' " +e.ToString());
                         return;
                     }
                     ServerCommands servCom = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
