@@ -322,7 +322,7 @@
                 MySqlCommand cmd = new MySqlCommand();
 
                 //Set command text based on given field
-                switch (field.ToLower())
+                    switch (field.ToLower())
                 {
                     case "userlocation":
                     case "location":
@@ -470,6 +470,15 @@
                         sw.WriteLine($"Unrecognised command {line}");
                         sw.Flush();
                         if(debug) Console.WriteLine($"Unrecognised command: '{line}' " +e.ToString());
+                        return;
+                    }
+                    if (update[0].ToLower() != "location" && update[0].ToLower() != "userlocation")
+                    {
+                        sw.WriteLine("HTTP/1.1 400 Bad Request");
+                        sw.WriteLine("Content-Type: text/plain");
+                        sw.WriteLine();
+                        sw.WriteLine($"Unrecognised field {update[0]} \nOnly the users location can be updated");
+                        sw.Flush();
                         return;
                     }
                     ServerCommands servCom = new ServerCommands("localhost", "root", "whois", "3306", "L3tM31n");
