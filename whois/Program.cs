@@ -158,7 +158,7 @@
                     "WHERE users.userID = phonenumber.userID " +
                     "AND users.userID = usersemail.userID " +
                     "AND usersemail.emailID = emails.emailID " +
-                    "AND logindetails.userID = (SELECT userID FROM logindetails " +
+                    "AND logindetails.userID IN (SELECT userID FROM logindetails " +
                     "WHERE logindetails.loginID = @loginID)" +
                     "AND users.userID = logindetails.userID;";
                 //UserID, Forename, Lastname, title, position, userlocation, phonenumber, email
@@ -176,6 +176,7 @@
                         {
                             output += $"{reader.GetName(i)}: {reader.GetString(i)}\n";
                         }
+                        output += "\n";
                     }
                     Console.WriteLine(output);
                 }
